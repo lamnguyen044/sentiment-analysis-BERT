@@ -15,6 +15,13 @@ The reference is the rule "always answer positive". The main metric is Macro-F1.
 BERT is ahead of the BiLSTM by 0.0454 Macro-F1 (95% bootstrap interval [+0.0400, +0.0507]). Neutral is the hardest class for both models.
 Details are in notebook 06 and in the reports.
 
+## Dataset
+
+[Amazon Fine Food Reviews](https://www.kaggle.com/datasets/snap/amazon-fine-food-reviews) (Stanford Network Analysis Project, Kaggle): 568,454 food reviews posted on Amazon between October 1999 and October 2012, each with a 1-5 star rating.
+Source paper: J. McAuley and J. Leskovec, *From amateurs to connoisseurs: modeling the evolution of user expertise through online reviews*, WWW 2013.
+
+The data are not stored in this repository. Download `Reviews.csv` from the Kaggle page above and place it at `dataset/Reviews.csv` (create the folder) before running notebook 01.
+
 ## Repository layout
 
 ```
@@ -37,7 +44,6 @@ src/                                shared code
   transformer.py                      HuggingFace inference and fine-tuning (fit_transformer)
   evaluation.py                       metrics, confusion matrices, bootstrap, neutral-threshold calibration, saving/loading predictions
   explain.py                          attention visualisation
-dataset/Reviews.csv                 raw data (Kaggle: snap/amazon-fine-food-reviews)
 outputs/                            generated files: split data (data/), saved models (bilstm/, bert/), predictions (predictions/)
 report/                             LaTeX report, English (main.tex, content/)
 report_vi/                          LaTeX report, Vietnamese
@@ -48,7 +54,7 @@ slides/                             Beamer slides, HUST red theme (slides.tex)
 
 GitHub rejects files over 100 MB, so these are excluded (see `.gitignore`) and must be recreated:
 
-- `dataset/Reviews.csv`: download [Amazon Fine Food Reviews](https://www.kaggle.com/datasets/snap/amazon-fine-food-reviews) from Kaggle and put the CSV in `dataset/`.
+- `dataset/`: the raw data, see the Dataset section above.
 - `outputs/data/*.pkl`: created by notebooks 01 and 03.
 - Model weights `outputs/bilstm/model.pt` and `outputs/bert/model.safetensors`: created by notebooks 04 and 05 (BERT needs a GPU for a reasonable training time). The web demo needs them.
 

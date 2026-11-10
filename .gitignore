@@ -1,5 +1,5 @@
 # Large data and model weights (regenerate with the notebooks; see README)
-dataset/*.csv
+dataset/
 outputs/data/
 *.safetensors
 *.pt
@@ -25,4 +25,3 @@ __pycache__/
 .DS_Store
 Thumbs.db
 .vscode/
-dataset/*.sqlite

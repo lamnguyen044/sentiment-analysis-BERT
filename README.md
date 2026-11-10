@@ -44,6 +44,16 @@ report_vi/                          LaTeX report, Vietnamese
 slides/                             Beamer slides, HUST red theme (slides.tex)
 ```
 
+## Not included in the repository
+
+GitHub rejects files over 100 MB, so these are excluded (see `.gitignore`) and must be recreated:
+
+- `dataset/Reviews.csv`: download [Amazon Fine Food Reviews](https://www.kaggle.com/datasets/snap/amazon-fine-food-reviews) from Kaggle and put the CSV in `dataset/`.
+- `outputs/data/*.pkl`: created by notebooks 01 and 03.
+- Model weights `outputs/bilstm/model.pt` and `outputs/bert/model.safetensors`: created by notebooks 04 and 05 (BERT needs a GPU for a reasonable training time). The web demo needs them.
+
+Predictions, training histories and the results table in `outputs/` are included.
+
 ## Running the notebooks
 
 Open the notebooks from the `notebooks/` folder (Jupyter or VS Code) and run them in order, 01 to 06 (07 only needs the models saved by 04 and 05). The first code cell adds the project folder to the Python path, and each notebook reads the output of the previous one from `outputs/`.

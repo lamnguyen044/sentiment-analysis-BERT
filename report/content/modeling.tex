@@ -1,0 +1,164 @@
+\section{Objective}
+\label{sec:6-1}
+
+Train two neural networks on the same training part and score them, together with the rule ``always answer positive'', on the same test reviews (Chapter~\ref{ch:data-preparation}): a BiLSTM with attention trained from scratch (Section~\ref{sec:6-3}), and a BERT encoder fine-tuned on the data (Section~\ref{sec:6-5}). The always-positive rule is a reference that is not trained. Section~\ref{sec:6-bg} first explains what LSTM, BiLSTM, attention and BERT are and why they are used.
+
+Both networks use the class-weighted cross-entropy of Section~\ref{sec:5-7}, select their settings on the validation part only, and read the test part once. Every number in this chapter comes from the training and validation runs; test results are in Chapter~\ref{ch:evaluation}.
+
+\section{Background: Why Sequence Models and Transformers}
+\label{sec:6-bg}
+
+This section introduces, at the depth the later sections need, the concepts behind the two neural models and the reason each is used here.
+
+\subsection*{Why the order of words matters}
+
+A model that only counts words and word pairs cannot tell ``not good'' from ``good'' once the negation is two or more words away (``not really all that good''), and it cannot tell who is praised in ``the coffee was fine but the delivery was awful''. Section~\ref{sec:4-8} showed that single words such as \emph{good} occur in all three classes, and that pairs separate the classes better. A model that reads the review \emph{in order} and carries information from earlier words to later ones can use this context. Two families of such models are used.
+
+\subsection*{Recurrent networks and the LSTM}
+
+A recurrent network reads the words one at a time and keeps a hidden state $h_t$ that summarises everything read so far. A plain recurrent network loses information over long texts, because the gradient that trains it shrinks at every step (the \emph{vanishing gradient} problem). The \textbf{Long Short-Term Memory} (LSTM) unit fixes this with a memory cell $c_t$ and three gates, which decide what to forget, what to write and what to output:
+\begin{align*}
+    f_t &= \sigma(W_f[h_{t-1},x_t]+b_f), & i_t &= \sigma(W_i[h_{t-1},x_t]+b_i),\\
+    o_t &= \sigma(W_o[h_{t-1},x_t]+b_o), & c_t &= f_t\odot c_{t-1} + i_t\odot\tanh(W_c[h_{t-1},x_t]+b_c),\\
+    h_t &= o_t\odot\tanh(c_t), & &
+\end{align*}
+where $x_t$ is the vector of the $t$-th word and $\sigma$ is the logistic function. The cell $c_t$ is changed only by addition and element-wise gating, so information, and gradient, can travel across many words. An LSTM therefore suits reviews of tens to hundreds of words.
+
+\subsection*{Why bidirectional, and why attention}
+
+A one-directional LSTM reads left to right, so its state at a word knows only the words before it. A \textbf{bidirectional LSTM} (BiLSTM) runs a second LSTM from right to left and joins the two states, $h_t=[\overrightarrow{h_t};\overleftarrow{h_t}]$. The state at each word then depends on the words on both sides, which helps when the meaning of a word is set by what follows it (``\emph{good} \ldots{} but not worth the price'').
+
+The sentiment of a review is not carried equally by every word. \textbf{Attention pooling} learns a weight $\alpha_t$ for each position and forms the review vector as the weighted sum of the states (equations in Section~\ref{sec:6-3}), instead of keeping only the last state, where early words are weakest. The weights can also be shown on the text, which makes the model inspectable.
+
+BiLSTM with attention was chosen because it is a standard, small sequence model for sentiment that can be trained from scratch on this data in minutes, it reads context in both directions, and it is inspectable.
+
+\subsection*{The Transformer and BERT}
+
+A recurrent network passes information from word to word, so a distant pair of words is linked only through many steps. The \textbf{Transformer} replaces this with \emph{self-attention}: every token compares itself directly with every other token of the review,
+\begin{equation*}
+    \text{Attention}(Q,K,V)=\operatorname{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right)V,
+\end{equation*}
+where the queries $Q$, keys $K$ and values $V$ are linear maps of the token vectors. Several such \emph{heads} work in parallel, and a vector for the position of each token is added because self-attention alone ignores order. A stack of such layers is an \emph{encoder}.
+
+\textbf{BERT} (Bidirectional Encoder Representations from Transformers) is a Transformer encoder that was first \emph{pre-trained}, by its authors, on a very large amount of English text (Wikipedia and BookCorpus) without any sentiment labels. Its task was to predict words hidden in the text (masked language modelling) and whether one sentence follows another. This teaches the network the grammar, the meaning of words in context and common negation patterns. Text is split into WordPiece sub-words, so a rare word becomes known pieces (\emph{unbelievable} $\to$ \emph{un}, \emph{\#\#bel}, \emph{\#\#ie}, \ldots) and no word is unknown. The first token of every input is a special \texttt{[CLS]} token whose final vector represents the whole text.
+
+\textbf{Fine-tuning} is \emph{transfer learning}: a small output layer for the three classes is added on top of the \texttt{[CLS]} vector, and the whole pre-trained network is trained a little further on the labelled reviews, with a small learning rate so that the learned knowledge is adjusted, not erased. In contrast to the BiLSTM, which learns language from the 315{,}000 training reviews alone, BERT starts with the knowledge of billions of words, and the project tests how much this helps. \texttt{bert-base-uncased} is the smaller of the two original sizes (12 layers, 109 million parameters) and lower-cases the text, which keeps the setup simple.
+
+\section{BiLSTM with Attention}
+\label{sec:6-3}
+
+\subsection*{Input}
+
+The input text of Section~\ref{sec:5-3} is lower-cased and split by a regular expression that keeps contractions (\emph{don't}) and the marks \texttt{!} and \texttt{?}. The vocabulary holds the words that occur at least three times in the training part, capped at 50{,}000; it ends with 46{,}760 entries, including the padding and unknown symbols. It covers 99.71\% of the training tokens. Each review is cut at 200 words, which cuts 6.47\% of the training reviews. Batches of 256 reviews are formed by length bucketing: the data are shuffled, grouped into chunks, sorted by length inside each chunk and cut into batches, so that reviews of similar length share a batch and padding is small. There are 1{,}230 batches per epoch.
+
+\subsection*{Architecture}
+
+\begin{center}
+\begin{tabular}{@{}p{3.6cm}p{10.4cm}@{}}
+    \toprule
+    Layer & Role \\
+    \midrule
+    Embedding $46{,}760\times128$ & a trainable vector per word, dropout 0.3 \\
+    BiLSTM, 128 units per direction & reads the review left-to-right and right-to-left; the state at position $t$ is $h_t\in\mathbb{R}^{256}$ \\
+    Attention pooling & weights each position and sums the states \\
+    Dropout 0.3, Linear $256\to3$ & class scores \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+The attention layer scores each state, normalises the scores over the real (non-padding) positions, and uses the weighted sum as the review vector:
+\begin{equation*}
+    e_t = \mathbf{w}^\top h_t,\qquad
+    \alpha_t = \frac{\exp(e_t)}{\sum_k \exp(e_k)},\qquad
+    \mathbf{c} = \sum_t \alpha_t h_t .
+\end{equation*}
+Padding positions get a score of $-10^{9}$ before the softmax, so their weight is zero. The model has 6{,}250{,}500 trainable parameters, of which 5{,}985{,}280 are the embedding.
+
+\subsection*{Training}
+
+\begin{center}
+\begin{tabular}{@{}p{5cm}p{9cm}@{}}
+    \toprule
+    Setting & Value \\
+    \midrule
+    Optimiser & AdamW, learning rate $2\times10^{-3}$, weight decay $10^{-4}$ \\
+    Schedule & learning rate halved when validation Macro-F1 does not improve \\
+    Gradient clipping & norm 1.0 \\
+    Epochs, early stopping & at most 5; stop after 2 epochs without improvement; keep the best epoch \\
+    Seed & 42 \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+The run used all 5 epochs; the best validation Macro-F1 is 0.7504 at epoch 4, and the model of that epoch is kept. Training takes 3.4 minutes on one Tesla T4 GPU.
+
+\begin{center}
+\small
+\begin{tabular}{@{}rrrrrr@{}}
+    \toprule
+    Epoch & Train loss & Validation loss & Validation accuracy & Validation Macro-F1 & Learning rate \\
+    \midrule
+    1 & 0.6168 & 0.5283 & 0.8646 & 0.7275 & 0.002 \\
+    2 & 0.4956 & 0.5292 & 0.8830 & 0.7469 & 0.002 \\
+    3 & 0.4549 & 0.5049 & 0.8614 & 0.7318 & 0.002 \\
+    4 & 0.4100 & 0.5376 & 0.8820 & \textbf{0.7504} & 0.001 \\
+    5 & 0.3894 & 0.5342 & 0.8772 & 0.7469 & 0.001 \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+The training loss falls steadily while the validation loss stays near 0.53 and is lowest at epoch 3, which signals overfitting from about epoch 3 or 4. The epoch is chosen by Macro-F1, not by validation loss, and the differences between the last epochs (about 0.003) are small.
+
+\section{Fine-tuning BERT}
+\label{sec:6-5}
+
+\texttt{bert-base-uncased} is a 12-layer Transformer encoder (hidden size 768, 12 attention heads) pre-trained on Wikipedia and BookCorpus. A new three-class layer is placed on the representation of the \texttt{[CLS]} token and the whole network is trained. The configuration is a single run without hyperparameter search.
+
+\begin{center}
+\begin{tabular}{@{}p{5cm}p{9cm}@{}}
+    \toprule
+    Setting & Value \\
+    \midrule
+    Tokenisation & WordPiece, cut at 256 tokens; dynamic padding with length bucketing \\
+    Truncation & about 6.2\% of reviews (measured on 3{,}000 training reviews; median length 80, 90th percentile 207 tokens) \\
+    Batch, epochs & 32 reviews, 2 epochs; 9{,}840 steps per epoch, 19{,}680 in total \\
+    Optimiser & AdamW, learning rate $3\times10^{-5}$, weight decay 0.01 (not applied to biases and LayerNorm) \\
+    Schedule & linear warm-up over the first 10\% of steps, then linear decay to 0 \\
+    Other & fp16 mixed precision, gradient clipping 1.0, seed 42 \\
+    Parameters & 109{,}484{,}547 \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+After each epoch the model is scored on the validation part and saved if its Macro-F1 is the best so far; there is no early stopping. Each epoch takes 32.2 minutes on a Tesla T4, 64.4 minutes in total.
+
+\begin{center}
+\begin{tabular}{@{}rrrr@{}}
+    \toprule
+    Epoch & Train loss & Validation accuracy & Validation Macro-F1 \\
+    \midrule
+    1 & 0.4943 & 0.8884 & 0.7664 \\
+    2 & 0.3517 & 0.9069 & \textbf{0.7864} \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+Validation Macro-F1 is still rising at the last epoch, so the model has not saturated and more epochs might help; with two epochs overfitting cannot be observed.
+
+\section{Summary of the Models}
+\label{sec:6-7}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{3.6cm}p{3.4cm}rp{3.6cm}@{}}
+    \toprule
+    Model & Trained on this data & Parameters & Selection on validation \\
+    \midrule
+    BiLSTM + attention & yes, from scratch & 6.25 M & epoch, early stopping \\
+    BERT-base & yes, fine-tuned & 109.48 M & epoch \\
+    Always positive & no & 0 & -- \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+Both networks were trained on one Tesla T4 GPU, so their training times are comparable.

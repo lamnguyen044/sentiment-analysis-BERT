@@ -1,0 +1,61 @@
+\section{Bối cảnh của dự án}
+\label{sec:1-1}
+
+Các cửa hàng trực tuyến nhận hàng nghìn đánh giá sản phẩm mỗi ngày. Đọc thủ công là không khả thi, trong khi cảm xúc trong các đánh giá cho người bán biết sản phẩm nào làm khách hàng thất vọng và sản phẩm nào được khen.
+
+Biến văn bản đó thành một tín hiệu đếm được là việc khó, vì số sao và nội dung review không phải lúc nào cũng khớp nhau. Một review có tiêu đề \emph{``Not as Advertised''} và mở đầu bằng ``Product arrived labeled as Jumbo Salted Peanuts\ldots the peanuts were actually small sized unsalted'' là review tiêu cực mà không chứa một từ nào mang nghĩa tiêu cực mạnh. Bộ phân loại phải đọc câu, không chỉ đếm từ.
+
+Dự án dùng bộ dữ liệu Amazon Fine Food Reviews~\cite{mcauley2013,kaggle_fine_food}: 568.454 review đăng từ tháng 10/1999 đến tháng 10/2012, mỗi review kèm số sao. Số sao cho ta nhãn mà không cần gán nhãn thủ công, nhưng phân bố bị lệch: sau khi làm sạch, khoảng 78\% review là positive và chỉ 7,6\% là neutral. Một bộ phân loại luôn trả lời \emph{positive} đạt khoảng 78\% accuracy mà không nhận biết được gì về hai lớp còn lại. Vì vậy các mô hình học sâu đọc văn bản theo ngữ cảnh được kiểm tra trên một bài toán mà lối tắt hiển nhiên đã rất mạnh.
+
+\section{Phát biểu vấn đề}
+\label{sec:1-2}
+
+\begin{itemize}
+    \item \textbf{Khó đọc cảm xúc từ văn bản.} Cảm xúc phụ thuộc vào phủ định (``not bad''), đối lập (``good but\ldots'') và ngữ cảnh, nên đếm từ là chưa đủ. Mô hình phải dùng thứ tự từ và ngữ cảnh.
+    \item \textbf{Nhãn mất cân bằng và chỉ gần đúng.} Nhãn suy ra từ số sao, không phải do con người gán, và lớp neutral (3 sao) hiếm và mơ hồ. Một mô hình có thể có accuracy cao mà vẫn sai ở các lớp thiểu số.
+\end{itemize}
+
+\section{Câu hỏi nghiên cứu}
+\label{sec:1-3}
+
+\begin{enumerate}
+    \item Làm thế nào biến các review thô và số sao thành một bộ dữ liệu có nhãn sạch, trong đó cùng một văn bản không xuất hiện ở cả tập train và tập test?
+    \item Các lớp lệch đến mức nào và review dài bao nhiêu, và những điều này gợi ý gì cho độ đo, hàm mất mát và độ dài chuỗi?
+    \item Một Transformer tiền huấn luyện được fine-tune trên dữ liệu này (BERT) cải thiện được bao nhiêu so với mạng hồi quy huấn luyện từ đầu (BiLSTM với attention)?
+    \item Hai mô hình đã huấn luyện cải thiện được bao nhiêu so với quy tắc luôn đoán \emph{positive}, và ở những lớp nào?
+    \item Các mô hình sai ở đâu, đặc biệt ở lớp neutral và ở những review có nội dung mâu thuẫn với số sao?
+\end{enumerate}
+
+\section{Mục tiêu dự án}
+\label{sec:1-4}
+
+Xây dựng và so sánh các bộ phân loại học sâu gán một trong ba nhãn cảm xúc (negative, neutral, positive) cho văn bản của một review thực phẩm, dùng bộ dữ liệu sạch, không rò rỉ, và cách đánh giá không bị đánh lừa bởi lớp positive chiếm đa số.
+
+\section{Phạm vi và giới hạn}
+\label{sec:1-5}
+
+\textbf{Trong phạm vi:} phân loại cảm xúc ba lớp cho văn bản review tiếng Anh, làm sạch và chia dữ liệu, BiLSTM với attention huấn luyện từ đầu, bộ mã hoá BERT được fine-tune, và quy tắc luôn đoán positive làm mốc tham chiếu.
+
+\textbf{Ngoài phạm vi / không khẳng định:}
+\begin{itemize}
+    \item Cảm xúc do con người gán nhãn: nhãn đến từ số sao nên một số nhãn sai ngay từ đầu (Mục~\ref{sec:2-2}).
+    \item Dự đoán cảm xúc của các review \emph{trong tương lai}: cách chia là ngẫu nhiên, không theo thời gian (Mục~\ref{sec:5-8}).
+    \item Cảm xúc theo khía cạnh (đặc điểm nào của sản phẩm được khen hay chê), các ngôn ngữ khác và các lĩnh vực sản phẩm khác.
+    \item Một dịch vụ đã triển khai.
+\end{itemize}
+
+\section{Cấu trúc báo cáo}
+\label{sec:1-6}
+
+Báo cáo được tổ chức thành các chương theo đúng thứ tự công việc đã làm. Các chương gồm:
+
+\begin{enumerate}
+    \item \textbf{Giới thiệu}: bối cảnh, phát biểu vấn đề, câu hỏi nghiên cứu, mục tiêu và phạm vi.
+    \item \textbf{Phát biểu bài toán và hướng tiếp cận} (Chương~\ref{ch:problem-approach}): nhãn yếu, tiêu chí thành công, độ đo và hướng phân tích.
+    \item \textbf{Bộ dữ liệu và đặc tả dữ liệu} (Chương~\ref{ch:dataset}): bộ Amazon Fine Food Reviews, lược đồ, quy ước và hạn chế.
+    \item \textbf{Tìm hiểu dữ liệu} (Chương~\ref{ch:data-understanding}): phân bố lớp, độ dài văn bản, thay đổi theo thời gian, người dùng, nhiễu và từ vựng, cùng các quyết định thiết kế rút ra.
+    \item \textbf{Chuẩn bị dữ liệu} (Chương~\ref{ch:data-preparation}): làm sạch, văn bản đầu vào của mô hình, chia phân tầng, tập con test cố định và trọng số lớp.
+    \item \textbf{Xây dựng mô hình} (Chương~\ref{ch:modeling}): BiLSTM với attention và BERT được fine-tune.
+    \item \textbf{Đánh giá} (Chương~\ref{ch:evaluation}): kết quả trên tập test, khoảng tin cậy, lớp neutral, độ dài review, hiệu chỉnh ngưỡng, lỗi và hạn chế.
+    \item \textbf{Kết luận} (Chương~\ref{ch:conclusion}): tổng kết, hạn chế, hướng phát triển và khả năng tái lập.
+\end{enumerate}

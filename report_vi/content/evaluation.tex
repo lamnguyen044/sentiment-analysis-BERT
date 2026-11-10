@@ -1,0 +1,165 @@
+\section{Mục tiêu}
+\label{sec:7-1}
+
+Đo mỗi mô hình gán cảm xúc tốt đến đâu cho các review chưa từng thấy, so sánh hai mạng một cách công bằng và tìm chỗ chúng sai. Quy trình được cố định trước khi có kết quả: Macro-F1 (Mục~\ref{sec:2-4}) là độ đo chính; tập test gồm 39.358 review chỉ được đọc một lần; mọi lựa chọn (epoch, ngưỡng neutral) đều làm trên tập validation. Khoảng tin cậy đến từ 1.000 lần lấy mẫu bootstrap lại các review test, với mọi mô hình được chấm trên cùng một mẫu để các chênh lệch có thể ghép cặp. Các khoảng này chỉ phản ánh sai số lấy mẫu của tập test, không phản ánh việc chọn seed ngẫu nhiên.
+
+\section{Kết quả trên toàn bộ tập test}
+\label{sec:7-2}
+
+\begin{center}
+\small
+\begin{tabular}{@{}lrrrrrr@{}}
+    \toprule
+    Mô hình & Accuracy & Macro-F1 & \shortstack[r]{F1\\negative} & \shortstack[r]{F1\\neutral} & \shortstack[r]{F1\\positive} & \shortstack[r]{Macro-F1\\khoảng 95\%} \\
+    \midrule
+    BERT-base fine-tune & \textbf{0,9074} & \textbf{0,7877} & \textbf{0,8470} & \textbf{0,5540} & \textbf{0,9620} & [0,7814; 0,7929] \\
+    BiLSTM + attention & 0,8788 & 0,7422 & 0,7863 & 0,4916 & 0,9488 & [0,7360; 0,7480] \\
+    Luôn đoán positive & 0,7794 & 0,2920 & 0 & 0 & 0,8760 & [0,2911; 0,2929] \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[
+  xbar, xmin=0, xmax=1, width=0.75\textwidth, height=4.4cm,
+  symbolic y coords={Luôn đoán positive,BiLSTM + attention,BERT-base},
+  ytick=data, xlabel={Macro-F1 trên tập test (khoảng tin cậy 95\%)},
+  xticklabel={\pgfmathprintnumber[use comma,fixed]{\tick}},
+  bar width=12pt, nodes near coords={\pgfmathprintnumber[use comma,fixed,precision=3]{\pgfplotspointmeta}},
+  nodes near coords align={horizontal},
+  every node near coord/.append style={font=\small, xshift=8pt}
+]
+\addplot[fill=blue!35, error bars/.cd, x dir=both, x explicit] coordinates {
+  (0.2920,Luôn đoán positive) += (0.0009,0) -= (0.0009,0)
+  (0.7422,BiLSTM + attention) += (0.0058,0) -= (0.0062,0)
+  (0.7877,BERT-base) += (0.0052,0) -= (0.0063,0)
+};
+\end{axis}
+\end{tikzpicture}
+\end{center}
+
+Cả hai mạng cao hơn hẳn quy tắc luôn đoán positive (Macro-F1 0,292, đạt accuracy 0,78 mà không nhận biết được gì về hai lớp còn lại). BERT tốt nhất ở mọi cột. F1 của lớp neutral thấp nhất với cả hai mạng, 0,49 và 0,55.
+
+\textbf{Chi phí.} Cả hai mạng đều được huấn luyện và đo thời gian trên Tesla T4.
+
+\begin{center}
+\small
+\begin{tabular}{@{}lrrr@{}}
+    \toprule
+    Mô hình & Thời gian huấn luyện & Suy luận trên tập test & Số tham số \\
+    \midrule
+    BERT-base & 64,4 phút & 83,7 s & 109,48 triệu \\
+    BiLSTM + attention & 3,4 phút & 3,7 s & 6,25 triệu \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+BERT cần khoảng 19 lần thời gian huấn luyện, 23 lần thời gian suy luận và 17,5 lần số tham số của BiLSTM để có thêm 0,0455 Macro-F1. BiLSTM đạt khoảng 94\% Macro-F1 của BERT với khoảng 5\% thời gian huấn luyện của nó.
+
+\section{Có phải lớp neutral là vấn đề?}
+\label{sec:7-3}
+
+Cả hai mạng đều có recall cao nhưng precision thấp ở neutral: chúng dự đoán neutral cho quá nhiều review. Bảng cho biết, với mỗi mô hình, tỉ lệ review neutral thật được dự đoán đúng, và nhãn thật của các review mà nó dự đoán là neutral.
+
+\begin{center}
+\small
+\begin{tabular}{@{}lrrrrrr@{}}
+    \toprule
+     & \multicolumn{3}{c}{Neutral thật được đoán là} & \multicolumn{3}{c}{Review đoán neutral thật ra là} \\
+    \cmidrule(lr){2-4}\cmidrule(lr){5-7}
+    Mô hình & negative & neutral & positive & negative & neutral & positive \\
+    \midrule
+    BERT-base & 19,7\% & 68,1\% & 12,1\% & 17,9\% & 46,7\% & 35,4\% \\
+    BiLSTM + attention & 16,5\% & 67,6\% & 15,9\% & 23,4\% & 38,6\% & 38,0\% \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+Cả hai mạng tìm lại được khoảng hai phần ba số review neutral, nhưng chưa đến một nửa số review chúng gọi là neutral thật sự là neutral. Nguyên nhân một phần nằm ở dữ liệu (review 3 sao thường vừa khen vừa chê, và lớp neutral không có từ vựng riêng, Mục~\ref{sec:4-8}) và một phần ở hàm mất mát, có trọng số neutral gấp 4,4 lần một trọng số điển hình (Mục~\ref{sec:5-7}).
+
+\section{Hiệu năng theo độ dài review}
+\label{sec:7-5}
+
+\begin{center}
+\small
+\begin{tabular}{@{}lrrrrrr@{}}
+    \toprule
+    Số từ mỗi review & $\le$30 & 31--60 & 61--100 & 101--200 & 201--400 & $>$400 \\
+    Số review trong tập test & 6.137 & 13.659 & 9.601 & 7.534 & 2.100 & 327 \\
+    \midrule
+    BERT-base & 0,778 & 0,783 & 0,794 & 0,796 & 0,758 & 0,693 \\
+    BiLSTM + attention & 0,753 & 0,738 & 0,746 & 0,747 & 0,704 & 0,600 \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+Cả hai mô hình đều thấp nhất ở review dài hơn 400 từ, và BiLSTM giảm nhiều nhất (0,600 so với 0,693 của BERT). BiLSTM chỉ giữ 200 từ đầu và BERT giữ 256 token đầu, nên cả hai đều mất phần cuối của review dài. Nhóm cuối chỉ có 327 review nên điểm dao động nhiều hơn và không nên đọc quá kỹ.
+
+\section{Khoảng bootstrap cho chênh lệch}
+\label{sec:7-6}
+
+Chênh lệch Macro-F1 giữa BERT và BiLSTM trên toàn bộ tập test là $+0{,}0454$, với khoảng 95\% là $[+0{,}0400;\,+0{,}0507]$ trên các mẫu bootstrap ghép cặp. Khoảng này không chứa số không, nên chênh lệch lớn hơn sai số lấy mẫu của tập test, và BERT hơn BiLSTM trong 100\% số mẫu.
+
+\section{Hiệu chỉnh ngưỡng cho lớp neutral}
+\label{sec:7-7}
+
+Vì các mô hình dự đoán neutral quá nhiều, một hằng số \texttt{bias} được cộng vào log-xác suất của neutral trước khi lấy arg\,max (bias âm làm dự đoán neutral ít hơn). Bias được chọn trên tập validation để cực đại Macro-F1 rồi áp một lần lên tập test. Việc này không cần huấn luyện lại.
+
+\begin{center}
+\small
+\begin{tabular}{@{}lrrrr@{}}
+    \toprule
+    Mô hình & \shortstack[r]{Bias\\đã chọn} & \shortstack[r]{Macro-F1 validation\\trước $\to$ sau} & \shortstack[r]{Macro-F1 test\\trước $\to$ sau} & \shortstack[r]{F1 neutral test\\trước $\to$ sau} \\
+    \midrule
+    BiLSTM + attention & $-0{,}8$ & 0,7504 $\to$ 0,7577 & 0,7422 $\to$ 0,7551 & 0,4916 $\to$ 0,4978 \\
+    BERT-base & $-1{,}1$ & 0,7864 $\to$ 0,7902 & 0,7877 $\to$ 0,7866 & 0,5540 $\to$ 0,5448 \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+Việc chỉnh giúp BiLSTM (+0,013 trên tập test) nhưng không giúp BERT: mức tăng 0,004 mà BERT có trên validation không lặp lại trên test và nằm trong nhiễu. Các kết quả chính của báo cáo không dùng bias (Mục~\ref{sec:7-2}); việc hiệu chỉnh là một thí nghiệm thêm.
+
+\section{Phân tích lỗi và ví dụ}
+\label{sec:7-8}
+
+\subsection*{Các lỗi tự tin của mô hình tốt nhất}
+
+BERT dự đoán \emph{negative} cho 165 review 5 sao và \emph{positive} cho 58 review 1 sao; 948 review neutral bị phân loại sai. Nhiều lỗi tự tin trông như nhãn nhiễu: tác giả chấm 5 sao nhưng viết lời phàn nàn (``Now I would not recommend it to my worst enemy. The coffee now has no aroma\ldots'', ``Incredibly overpriced\ldots this is a total and complete rip off''), hoặc chấm 1 sao mà lại khen (``LOVE LOVE LOVE THESE! (edited because NO longer available in prime)''). Trong các trường hợp này mô hình đọc văn bản đúng hơn số sao. Không phải ca nào cũng vậy: ``My dogs won't eat anything else. My dogs will not eat anything but the Iams biscuit'' khen sản phẩm, và mô hình đọc sai. Tỉ lệ nhãn nhiễu trong các lỗi chưa được đếm, nên báo cáo không nêu tỉ lệ.
+
+Một đặc tính liên quan của dữ liệu: khoảng 3,4\% review test (1.350) chứa cụm như ``3 stars'', và chỉ khoảng 59\% trong số đó nêu đúng số sao thật (phần còn lại là cách nói như ``5 star service'' hay ``4 stars out of 5''). Các văn bản này được giữ lại, nên có một ít tín hiệu đi từ nhãn vào văn bản với cả hai mô hình.
+
+\subsection*{Các câu tự viết để thử}
+
+Sáu câu do tác giả viết cho một kiểm tra định tính; chúng không thay thế các phép đo ở trên.
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{7.2cm}ll@{}}
+    \toprule
+    Câu & BiLSTM & BERT \\
+    \midrule
+    ``This coffee is absolutely amazing, I will definitely buy it again!'' & pos (100\%) & pos (100\%) \\
+    ``Not bad at all, actually pretty tasty.'' & neu (78\%) & pos (79\%) \\
+    ``It's okay. Nothing special, but it does the job.'' & neu (100\%) & neu (99\%) \\
+    ``Great, another box arrived completely crushed. Just what I needed.'' & pos (87\%) & pos (99\%) \\
+    ``My dog loves these treats, but they are way too expensive for such a small bag.'' & neu (84\%) & neu (89\%) \\
+    ``I would not recommend this to anyone. Total waste of money.'' & neg (100\%) & neg (100\%) \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+Cả hai mô hình đều đọc câu mỉa mai thứ tư là positive, vì ``great'' và ``just what I needed'' nghe như khen. Cả hai gán neutral cho các câu pha trộn (thứ ba và thứ năm) và đoán đúng các câu rõ ràng khen hoặc chê. Với câu thứ hai, BiLSTM trả lời neutral còn BERT trả lời positive; cả hai đều chấp nhận được cho một lời khen nhẹ như vậy. Trọng số attention của BiLSTM chủ yếu rơi vào các từ mang cảm xúc hoặc đảo nghĩa (\emph{mistake}, \emph{great}, \emph{not}, \emph{okay}, \emph{but}), nhưng không phải lúc nào cũng vậy: với một review neutral, trọng số lớn nhất rơi vào một tên sản phẩm (\emph{stevia}). Attention cho thấy mô hình nhìn vào đâu, không phải một lời giải thích đầy đủ.
+
+\section{Hạn chế}
+\label{sec:7-9}
+
+\begin{itemize}
+    \item \textbf{Nhãn yếu.} Số sao không phải lúc nào cũng khớp với văn bản (Mục~\ref{sec:7-8}), và ranh giới 3 sao mang tính chủ quan, điều này chặn trên chất lượng mà bất kỳ mô hình nào có thể cho thấy.
+    \item \textbf{Mỉa mai và ý kiến pha trộn.} Cả hai mô hình đều sai ở câu mỉa mai, và neutral vẫn là lớp khó nhất (F1 0,49 và 0,55).
+    \item \textbf{Chia ngẫu nhiên.} Phân bố nhãn trôi theo thời gian (Mục~\ref{sec:4-5}) và cùng một người dùng hoặc sản phẩm có thể nằm ở cả train và test, nên điểm số không đo hiệu năng trên review tương lai.
+    \item \textbf{Số lần chạy và seed.} Mỗi mô hình chỉ được huấn luyện một lần (seed 42), nên các khoảng bootstrap không bao gồm dao động giữa các seed.
+    \item \textbf{BERT chưa bão hoà.} Nó được fine-tune 2 epoch với một cấu hình cố định, nên điểm của nó có thể là cận dưới.
+    \item \textbf{Cắt bớt khác nhau.} BiLSTM giữ 200 từ và BERT giữ 256 token.
+    \item \textbf{Một lĩnh vực.} Toàn bộ dữ liệu là review thực phẩm tiếng Anh trên Amazon, 1999--2012.
+\end{itemize}

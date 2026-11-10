@@ -1,0 +1,150 @@
+\section{Mục tiêu}
+\label{sec:5-1}
+
+Biến các review thô thành một bộ dữ liệu cho mô hình không bị rò rỉ: làm sạch các dòng thô (Mục~\ref{sec:5-2}), tạo văn bản đầu vào (Mục~\ref{sec:5-3}) và nhãn (Mục~\ref{sec:5-4}), chia review thành ba phần (Mục~\ref{sec:5-5}) và tính trọng số lớp (Mục~\ref{sec:5-7}). Chương này thực hiện các quyết định thiết kế của Mục~\ref{sec:4-9} bằng một cấu hình cố định:
+
+\begin{center}
+\begin{tabular}{@{}p{5.2cm}p{3cm}p{5.8cm}@{}}
+    \toprule
+    Tham số & Giá trị & Nguồn gốc \\
+    \midrule
+    Tỉ lệ chia train / val / test & 80 / 10 / 10\% & Phần test lớn; validation để chọn epoch \\
+    Phân tầng & Theo nhãn & Neutral chỉ chiếm 7,6\% (Mục~\ref{sec:4-3}) \\
+    Seed ngẫu nhiên & 42 & Cách chia tái lập được \\
+    Giới hạn chuỗi & 200 từ / 256 token & Độ phủ độ dài (Mục~\ref{sec:4-4}) \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\section{Làm sạch dữ liệu}
+\label{sec:5-2}
+
+Mỗi vấn đề chất lượng dữ liệu trước hết được đo trên toàn bộ file thô 568.454 dòng (các dòng có thể trùng giữa các quy tắc):
+
+\begin{center}
+\begin{tabular}{@{}p{7cm}p{3cm}p{3cm}@{}}
+    \toprule
+    Vấn đề & Số dòng & Tỉ lệ dòng \\
+    \midrule
+    Review lặp (cùng user, tên, thời điểm, nội dung) & 174.521 & 30,70\% \\
+    \texttt{Text} lặp & 174.875 & 30,76\% \\
+    Thiếu \texttt{Summary} & 27 & 0,005\% \\
+    Thiếu \texttt{ProfileName} & 26 & 0,005\% \\
+    Tử số $>$ mẫu số (helpfulness) & 2 & $<$0,001\% \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+Không có dòng nào trùng ở \emph{tất cả} các cột, nên sự lặp lại ẩn trong mã sản phẩm. Ví dụ, người dùng \texttt{A395BORC6FGVXV} đăng một review 2 sao tiêu đề ``Cough Medicine'' lúc 1307923200, và review đó xuất hiện ba lần dưới ba mã sản phẩm khác nhau (\texttt{B000UA0QIQ}, \texttt{B002Y7526Y}, \texttt{B000U9WZ54}). Nếu giữ lại, các bản sao như vậy sẽ rơi vào cả hai phía của một phép chia ngẫu nhiên.
+
+Việc làm sạch thực hiện theo thứ tự sau, luôn giữ lần xuất hiện đầu tiên:
+\begin{enumerate}
+    \item Loại các dòng lặp khoá (\texttt{UserId}, \texttt{ProfileName}, \texttt{Time}, \texttt{Text}).
+    \item Loại các dòng có \texttt{HelpfulnessNumerator} $>$ \texttt{HelpfulnessDenominator}, điều không thể xảy ra theo định nghĩa.
+    \item Loại các dòng có \texttt{Text} vẫn trùng với một dòng trước đó (bản sao giữa các tài khoản, spam).
+    \item Thay \texttt{Summary} bị thiếu bằng chuỗi rỗng và tạo nhãn từ \texttt{Score} (Mục~\ref{sec:5-4}).
+\end{enumerate}
+
+\begin{center}
+\begin{tabular}{@{}p{7cm}p{3cm}p{3cm}@{}}
+    \toprule
+    Giai đoạn & Số dòng còn lại & Số dòng bị loại \\
+    \midrule
+    File thô & 568.454 & -- \\
+    Sau bước 1 (lặp khoá) & 393.933 & 174.521 \\
+    Sau bước 2 (helpfulness không hợp lệ) & 393.931 & 2 \\
+    Sau bước 3 (\texttt{Text} lặp) & 393.577 & 354 \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Kết quả.} Việc làm sạch loại 174.877 dòng (30,8\% của 568.454) và còn lại \textbf{393.577 review}. Bước 3 giữ lần xuất hiện đầu tiên bất kể số sao. Nó cũng loại cả các review ngắn giống hệt nhưng do những người khác nhau viết, một sự đánh đổi có chủ ý: tốn 354 dòng (0,09\% dữ liệu) và đóng nốt con đường rò rỉ còn lại. Bảng đã làm sạch được lưu một lần và mọi giai đoạn sau đều đọc từ đó.
+
+\section{Tạo văn bản đầu vào của mô hình}
+\label{sec:5-3}
+
+Đầu vào của mô hình là
+\begin{equation*}
+    \text{text} = \operatorname{clean}(\texttt{Summary}) + \text{``. ''} + \operatorname{clean}(\texttt{Text}),
+\end{equation*}
+trong đó $\operatorname{clean}$ giải mã các thực thể HTML, xoá thẻ HTML và URL, và gộp khoảng trắng. Nó không chuyển chữ thường, không xoá dấu câu và không xoá từ dừng (Mục~\ref{sec:4-7}). Dấu nối tuân theo ba quy tắc:
+\begin{itemize}
+    \item Nếu tiêu đề không rỗng và không kết thúc bằng ``.'', ``!'' hoặc ``?'', hai phần được nối bằng ``. ''.
+    \item Nếu tiêu đề đã kết thúc bằng một trong các dấu đó, hai phần được nối bằng một khoảng trắng.
+    \item Nếu tiêu đề rỗng (27 dòng thô thiếu tiêu đề), đầu vào chỉ là nội dung đã làm sạch.
+\end{itemize}
+Ví dụ, review có tiêu đề ``Not as Advertised'' trở thành ``Not as Advertised. Product arrived labeled as Jumbo Salted Peanuts\ldots'', và đoạn nội dung ``\ldots were bummed.\texttt{<br />}\texttt{<br />}Now, because\ldots'' trở thành ``\ldots were bummed. Now, because\ldots''. Làm sạch toàn bộ 393.577 review mất 19,5 giây. Việc token hoá phụ thuộc vào mô hình (từ điển từ cho BiLSTM, WordPiece cho Transformer), nên được thực hiện trong các chương xây dựng mô hình.
+
+\section{Tạo nhãn}
+\label{sec:5-4}
+
+Nhãn được suy ra từ \texttt{Score} theo phép ánh xạ ở Mục~\ref{sec:2-2}: 1 và 2 sao cho negative (0), 3 sao cho neutral (1), 4 và 5 sao cho positive (2).
+
+\section{Chia train, validation và test}
+\label{sec:5-5}
+
+Dữ liệu được chia hai giai đoạn có phân tầng với seed cố định: 80\% cho train và 20\% giữ lại, rồi phần giữ lại được chia đều thành validation và test.
+
+\begin{lstlisting}
+train_df, temp_df = train_test_split(
+    df[cols], test_size=0.2, stratify=df['label'], random_state=SEED)
+val_df, test_df = train_test_split(
+    temp_df, test_size=0.5, stratify=temp_df['label'], random_state=SEED)
+\end{lstlisting}
+
+\begin{center}
+\begin{tabular}{@{}lrrrr@{}}
+    \toprule
+    Phần & Số review & negative & neutral & positive \\
+    \midrule
+    Train & 314.861 & 45.654 & 23.803 & 245.404 \\
+    Validation & 39.358 & \multicolumn{3}{c}{tỉ lệ như train} \\
+    Test & 39.358 & \multicolumn{3}{c}{tỉ lệ như train} \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+Tỉ lệ khoảng 14,5\%, 7,6\% và 77,9\% ở mọi phần vì cách chia có phân tầng. Train cập nhật trọng số. Validation chọn epoch tốt nhất và hiệu chỉnh ngưỡng neutral sau này. Test chỉ được dùng một lần, ở cuối, cho các kết quả báo cáo. Vì seed và quy tắc cố định, chạy lại cho ra đúng ba phần như cũ.
+
+\section{Trọng số lớp}
+\label{sec:5-7}
+
+Gọi $N$ là số review train, $K=3$ là số lớp và $N_c$ là số review train của lớp $c$. Trọng số của lớp $c$ là
+\begin{equation*}
+    w_c = \frac{N}{K\,N_c},
+\end{equation*}
+và hàm mất mát trên một batch là
+\begin{equation*}
+    \mathcal{L} = -\frac{1}{\sum_i w_{y_i}} \sum_i w_{y_i}\log \hat p_{i,y_i}.
+\end{equation*}
+Lớp hiếm nhận trọng số lớn, nên lỗi ở lớp đó bị phạt nặng hơn và gradient của nó không bị lớp đa số lấn át. Trọng số chỉ tính từ số lượng ở tập train:
+
+\begin{center}
+\begin{tabular}{@{}lrr@{}}
+    \toprule
+    Lớp & Số review train $N_c$ & Trọng số $w_c$ \\
+    \midrule
+    negative & 45.654 & 2,299 \\
+    neutral & 23.803 & 4,409 \\
+    positive & 245.404 & 0,428 \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+Một review neutral nặng gấp khoảng 10 lần một review positive ($4{,}409/0{,}428 \approx 10{,}3$), đúng bằng tỉ lệ mất cân bằng ở Mục~\ref{sec:4-3}.
+
+\section{Phòng tránh rò rỉ và cách chia ngẫu nhiên}
+\label{sec:5-8}
+
+\begin{itemize}
+    \item \textbf{Văn bản lặp.} Review lặp bị loại \emph{trước} khi chia (Mục~\ref{sec:5-2}), nên cùng một văn bản không thể nằm ở cả train và test.
+    \item \textbf{Thống kê chỉ từ train.} Trọng số lớp tính từ tập train (Mục~\ref{sec:5-7}); từ điển của BiLSTM chỉ xây từ tập train (chương xây dựng mô hình).
+    \item \textbf{Test chỉ dùng một lần.} Việc chọn epoch và ngưỡng neutral được làm trên validation; test chỉ được đọc cho báo cáo cuối.
+    \item \textbf{Ngẫu nhiên, không theo thời gian.} Review train và test cùng giai đoạn, dù phân bố nhãn trôi theo thời gian (Mục~\ref{sec:4-5}). Vì vậy điểm số không đo hiệu năng trên review tương lai.
+    \item \textbf{Không có kiểm tra tự động.} Tỉ lệ lớp của từng phần được in ra và so bằng mắt; không có lệnh assert, nên khi sửa code chia dữ liệu cần kiểm tra lại với bảng ở Mục~\ref{sec:5-5}.
+\end{itemize}
+
+\section{Kết luận}
+\label{sec:5-9}
+
+568.454 review thô trở thành 393.577 review đã làm sạch, được chia thành 314.861 review train, 39.358 validation và 39.358 test, với trọng số lớp 2,299, 4,409 và 0,428 cho negative, neutral và positive. Các chương tiếp theo huấn luyện mô hình trên tập train, chọn trên validation và báo cáo trên test.

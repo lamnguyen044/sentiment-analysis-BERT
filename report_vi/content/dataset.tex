@@ -1,0 +1,77 @@
+\section{Nguồn và cách thu thập dữ liệu}
+\label{sec:3-1}
+
+Dự án dùng bộ dữ liệu công khai \textbf{Amazon Fine Food Reviews}, do McAuley và Leskovec~\cite{mcauley2013} thu thập và được phân phối trên Kaggle~\cite{kaggle_fine_food}. Đây là một bản trích lịch sử các review thực phẩm đăng trên Amazon từ tháng 10/1999 đến tháng 10/2012. Dữ liệu được đọc từ một file CSV duy nhất, khoảng 300~MB, để kiểm tra, làm sạch và xây dựng mô hình.
+
+\section{Đặc điểm và hạn chế của bộ dữ liệu}
+\label{sec:3-2}
+
+\begin{itemize}
+    \item \textbf{Nhãn yếu.} Tín hiệu cảm xúc duy nhất là số sao, và số sao không phải lúc nào cũng khớp với văn bản (Mục~\ref{sec:2-2}).
+    \item \textbf{Review lặp.} Amazon dùng chung một review cho các biến thể (hương vị, kích cỡ) của một sản phẩm, nên cùng một review xuất hiện dưới nhiều mã sản phẩm (Mục~\ref{sec:5-2}).
+    \item \textbf{Một lĩnh vực.} Mọi review đều về thực phẩm, nên kết quả không nhất thiết áp dụng cho đồ điện tử, sách hay phim.
+    \item \textbf{Thay đổi theo thời gian.} Số lượng, điểm trung bình và tỉ lệ review negative đều thay đổi từ 2003 đến 2012 (Mục~\ref{sec:4-5}).
+\end{itemize}
+
+\section{Lược đồ dữ liệu thô}
+\label{sec:3-3}
+
+Dữ liệu thô là một bảng phẳng gồm 568.454 dòng và 10 cột; mỗi dòng là một review.
+
+\begin{center}
+\begin{tabular}{@{}p{4.6cm}p{2cm}p{8cm}@{}}
+    \toprule
+    Cột & Kiểu & Mô tả \\
+    \midrule
+    \texttt{Id} & số nguyên & Số thứ tự dòng. \\
+    \texttt{ProductId} & chuỗi & Mã sản phẩm. \\
+    \texttt{UserId} & chuỗi & Mã người dùng. \\
+    \texttt{ProfileName} & chuỗi & Tên hiển thị của người dùng; thiếu ở 26 dòng. \\
+    \texttt{HelpfulnessNumerator} & số nguyên & Số người thấy review hữu ích. \\
+    \texttt{HelpfulnessDenominator} & số nguyên & Số người đã bình chọn (hữu ích hoặc không). \\
+    \texttt{Score} & số nguyên & Số sao từ 1 đến 5; nguồn của nhãn. \\
+    \texttt{Time} & số nguyên & Thời điểm đăng, dạng Unix timestamp. \\
+    \texttt{Summary} & chuỗi & Tiêu đề ngắn của review; thiếu ở 27 dòng. \\
+    \texttt{Text} & chuỗi & Nội dung review; đầy đủ. \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\section{Tên cột trong quy trình xử lý}
+\label{sec:3-4}
+
+Các cột thô giữ nguyên tên trong quy trình. Bốn cột được suy ra hoặc ghép từ chúng:
+
+\begin{center}
+\begin{tabular}{@{}p{3.6cm}p{2.6cm}p{8.2cm}@{}}
+    \toprule
+    Cột thô & Tên trong quy trình & Ghi chú \\
+    \midrule
+    \texttt{Score} & \texttt{label} & 0, 1, 2 tương ứng negative, neutral, positive (Mục~\ref{sec:2-2}) \\
+    \texttt{Score} & \texttt{sentiment} & Nhãn dưới dạng chữ, cho bảng và biểu đồ dễ đọc \\
+    \texttt{Time} & \texttt{date} & Unix timestamp đổi sang ngày \\
+    \texttt{Summary}, \texttt{Text} & \texttt{text} & Đầu vào của mô hình: tiêu đề đã làm sạch nối với nội dung đã làm sạch (Mục~\ref{sec:5-3}) \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\section{Quy ước giá trị}
+\label{sec:3-5}
+
+Ba quy ước xuất hiện xuyên suốt báo cáo:
+
+\begin{itemize}
+    \item \textbf{Các cột Helpfulness.} Amazon hiển thị dòng như ``12 of 15 people found this review helpful'', tương ứng \texttt{HelpfulnessNumerator} $=12$ và \texttt{HelpfulnessDenominator} $=15$. Vì tử số là một phần của mẫu số nên nó không bao giờ lớn hơn mẫu số. Hai cột này chỉ dùng để kiểm tra chất lượng dữ liệu (Mục~\ref{sec:5-2}) và cho một biểu đồ khám phá (Mục~\ref{sec:4-6}); chúng \emph{không} là đầu vào của mô hình, vì review vừa đăng chưa có lượt bình chọn nào.
+    \item \textbf{Tiêu đề bị thiếu.} \texttt{Summary} bị thiếu được thay bằng chuỗi rỗng; dòng vẫn được giữ lại.
+    \item \textbf{Một dòng, một review.} Sau khi làm sạch, mỗi dòng là một review có văn bản duy nhất. Các cột người dùng và sản phẩm chỉ dùng để nhận diện tác giả và mặt hàng trong phần phân tích mô tả, không là đầu vào của mô hình.
+\end{itemize}
+
+\section{Thông tin không có}
+\label{sec:3-6}
+
+Bộ dữ liệu không có nhãn cảm xúc do con người gán, không có danh mục sản phẩm, không có thông tin về người viết ngoài mã ẩn danh và tên hiển thị, và không có cách chia train/test định sẵn. Vì vậy cách chia trong Chương~\ref{ch:data-preparation} do dự án tự thực hiện.
+
+\section{Thiết kế bảng dữ liệu phân tích}
+\label{sec:3-7}
+
+Bảng dữ liệu cho mô hình có mỗi dòng là một review: văn bản đầu vào, nhãn và số sao gốc. Bảng được xây dựng trong Chương~\ref{ch:data-preparation} từ bảng đã làm sạch ở Mục~\ref{sec:5-2}.

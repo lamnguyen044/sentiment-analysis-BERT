@@ -1,0 +1,77 @@
+\section{Data Source and Collection}
+\label{sec:3-1}
+
+The project uses the publicly available \textbf{Amazon Fine Food Reviews} dataset, collected by McAuley and Leskovec~\cite{mcauley2013} and distributed on Kaggle~\cite{kaggle_fine_food}. It is a historical extract of food reviews posted on Amazon between October 1999 and October 2012. The dataset is read from a single CSV file of about 300~MB for inspection, cleaning and modelling.
+
+\section{Dataset Characteristics and Limitations}
+\label{sec:3-2}
+
+\begin{itemize}
+    \item \textbf{Weak labels.} The only sentiment signal is the star rating, which does not always agree with the text (Section~\ref{sec:2-2}).
+    \item \textbf{Repeated reviews.} Amazon shares one review among the variants (flavours, sizes) of a product, so the same review appears under several product codes (Section~\ref{sec:5-2}).
+    \item \textbf{One domain.} All reviews concern food products, so results do not necessarily carry over to electronics, books or films.
+    \item \textbf{Change over time.} The volume, average rating and share of negative reviews all change between 2003 and 2012 (Section~\ref{sec:4-5}).
+\end{itemize}
+
+\section{Raw Data Schema}
+\label{sec:3-3}
+
+The raw dataset is a single flat table of 568{,}454 rows and 10 columns; each row is one review.
+
+\begin{center}
+\begin{tabular}{@{}p{4.6cm}p{2cm}p{8cm}@{}}
+    \toprule
+    Column & Type & Description \\
+    \midrule
+    \texttt{Id} & integer & Row number. \\
+    \texttt{ProductId} & string & Product code. \\
+    \texttt{UserId} & string & User code. \\
+    \texttt{ProfileName} & string & User display name; missing in 26 rows. \\
+    \texttt{HelpfulnessNumerator} & integer & Number of readers who found the review helpful. \\
+    \texttt{HelpfulnessDenominator} & integer & Number of readers who voted at all (helpful or not). \\
+    \texttt{Score} & integer & Star rating from 1 to 5; the source of the label. \\
+    \texttt{Time} & integer & Posting time as a Unix timestamp. \\
+    \texttt{Summary} & string & Short review title; missing in 27 rows. \\
+    \texttt{Text} & string & Review body; complete. \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\section{Pipeline Column Names}
+\label{sec:3-4}
+
+The raw columns keep their names in the pipeline. Four columns are derived or combined from them:
+
+\begin{center}
+\begin{tabular}{@{}p{3.6cm}p{2.6cm}p{8.2cm}@{}}
+    \toprule
+    Raw column(s) & Pipeline name & Notes \\
+    \midrule
+    \texttt{Score} & \texttt{label} & 0, 1, 2 for negative, neutral, positive (Section~\ref{sec:2-2}) \\
+    \texttt{Score} & \texttt{sentiment} & The label as a word, for readable tables and plots \\
+    \texttt{Time} & \texttt{date} & Unix timestamp converted to a date \\
+    \texttt{Summary}, \texttt{Text} & \texttt{text} & Model input: cleaned title followed by cleaned body (Section~\ref{sec:5-3}) \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\section{Value Conventions}
+\label{sec:3-5}
+
+Three conventions recur throughout the report:
+
+\begin{itemize}
+    \item \textbf{Helpfulness columns.} Amazon shows a line such as ``12 of 15 people found this review helpful'', which corresponds to \texttt{HelpfulnessNumerator} $=12$ and \texttt{HelpfulnessDenominator} $=15$. Because the numerator is a part of the denominator, it can never exceed it. The two columns are used only to check data quality (Section~\ref{sec:5-2}) and for one exploratory plot (Section~\ref{sec:4-6}); they are \emph{not} model inputs, because a review that has just been posted has no votes yet.
+    \item \textbf{Missing title.} A missing \texttt{Summary} is replaced by an empty string; the row is kept.
+    \item \textbf{One row, one review.} After cleaning, each row is one review with a unique text. The user and product columns identify authors and items only for the descriptive analysis; they are not model inputs.
+\end{itemize}
+
+\section{Information Not Available}
+\label{sec:3-6}
+
+The dataset contains no human sentiment annotation, no product category, no information on the reviewer beyond an anonymous code and display name, and no predefined train/test split. The split in Chapter~\ref{ch:data-preparation} is therefore made by this project.
+
+\section{Analytical Dataset Design}
+\label{sec:3-7}
+
+The modelling table has one row per review: the input text, the label, and the original star rating. It is built in Chapter~\ref{ch:data-preparation}, from the cleaned table of Section~\ref{sec:5-2}.

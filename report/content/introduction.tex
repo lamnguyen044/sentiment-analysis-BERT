@@ -1,0 +1,61 @@
+\section{Project Background}
+\label{sec:1-1}
+
+Online shops receive thousands of product reviews every day. Reading them by hand is not feasible, yet the sentiment they carry tells a seller which products disappoint buyers and which are praised.
+
+Turning that text into a signal that can be counted is difficult because a star rating and the words of a review do not always agree. A review titled \emph{``Not as Advertised''} that begins ``Product arrived labeled as Jumbo Salted Peanuts\ldots the peanuts were actually small sized unsalted'' is negative without containing a single strongly negative word. A classifier has to read the sentence, not count words.
+
+This project uses the Amazon Fine Food Reviews corpus~\cite{mcauley2013,kaggle_fine_food}: 568{,}454 reviews posted between October 1999 and October 2012, each with a star rating. The ratings give labels without manual annotation, but they are skewed: after cleaning, about 78\% of the reviews are positive and only 7.6\% are neutral. A classifier that always answers \emph{positive} reaches about 78\% accuracy while recognising nothing about the other classes. Deep learning models that read the text in context are therefore tested on a problem where the obvious shortcut is already strong.
+
+\section{Problem Statement}
+\label{sec:1-2}
+
+\begin{itemize}
+    \item \textbf{Difficulty in reading sentiment from text.} Sentiment depends on negation (``not bad''), contrast (``good but\ldots'') and context, so counting words is not enough. Models must use word order and context.
+    \item \textbf{Imbalanced and approximate labels.} The labels are derived from star ratings, not from human annotation, and the neutral class (3 stars) is rare and ambiguous. A model can look good on accuracy while failing on the minority classes.
+\end{itemize}
+
+\section{Research Questions}
+\label{sec:1-3}
+
+\begin{enumerate}
+    \item How can raw reviews and star ratings be turned into a clean labelled corpus in which the same text never appears in both training and test data?
+    \item How skewed are the classes and how long are the reviews, and what do these facts imply for the metric, the loss and the sequence length?
+    \item How much does a pre-trained Transformer fine-tuned on this data (BERT) improve over a recurrent network trained from scratch (BiLSTM with attention)?
+    \item How far do the two trained models improve on the rule that always answers \emph{positive}, and on which classes?
+    \item Where do the models fail, in particular on the neutral class and on reviews whose text contradicts their rating?
+\end{enumerate}
+
+\section{Project Objectives}
+\label{sec:1-4}
+
+To build and compare deep learning classifiers that assign one of three sentiment labels (negative, neutral, positive) to the text of a food review, using a clean, leakage-safe dataset and an evaluation that is not fooled by the dominant positive class.
+
+\section{Scope and Limitations}
+\label{sec:1-5}
+
+\textbf{In scope:} three-class sentiment classification of English review text, data cleaning and splitting, a BiLSTM with attention trained from scratch, a fine-tuned BERT encoder, and the always-positive rule as reference.
+
+\textbf{Out of scope / not claimed:}
+\begin{itemize}
+    \item Human-annotated sentiment -- labels come from star ratings, so some are wrong by construction (Section~\ref{sec:2-2}).
+    \item Predicting the sentiment of \emph{future} reviews -- the split is random, not chronological (Section~\ref{sec:5-8}).
+    \item Aspect-level sentiment (which feature of the product is praised or criticised), other languages and other product domains.
+    \item A deployed service.
+\end{itemize}
+
+\section{Report Structure}
+\label{sec:1-6}
+
+The report is organised into chapters that follow the order in which the work was built. The chapters are:
+
+\begin{enumerate}
+    \item \textbf{Introduction} -- background, problem statement, research questions, objectives and scope.
+    \item \textbf{Problem Statement and Approach} (Chapter~\ref{ch:problem-approach}) -- weak labels, success criteria, metrics and the analytical approach.
+    \item \textbf{Dataset and Data Specification} (Chapter~\ref{ch:dataset}) -- the Amazon Fine Food Reviews corpus, its schema, conventions and limitations.
+    \item \textbf{Data Understanding} (Chapter~\ref{ch:data-understanding}) -- class distribution, text length, change over time, users, noise and vocabulary, and the design decisions they imply.
+    \item \textbf{Data Preparation} (Chapter~\ref{ch:data-preparation}) -- cleaning, model input text, stratified split, fixed test subset and class weights.
+    \item \textbf{Modeling} (Chapter~\ref{ch:modeling}) -- the BiLSTM with attention and the fine-tuned BERT.
+    \item \textbf{Evaluation} (Chapter~\ref{ch:evaluation}) -- test results, confidence intervals, the neutral class, review length, threshold calibration, errors and limitations.
+    \item \textbf{Conclusion} (Chapter~\ref{ch:conclusion}) -- summary, limitations, future work and reproducibility.
+\end{enumerate}

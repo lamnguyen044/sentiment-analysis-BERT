@@ -1,0 +1,32 @@
+\section{Tổng kết}
+\label{sec:8-1}
+
+Dự án đã biến 568.454 review thực phẩm Amazon thành một bộ dữ liệu 393.577 review sạch, không rò rỉ (Chương~\ref{ch:data-preparation}), chia 80/10/10 có phân tầng, và so sánh hai bộ phân loại đã huấn luyện với quy tắc luôn đoán positive trong bài toán cảm xúc ba lớp gán nhãn từ số sao.
+
+\begin{itemize}
+    \item \textbf{BERT-base được fine-tune là mô hình tốt hơn:} Macro-F1 0,7877 và accuracy 0,9074 trên 39.358 review test, hơn BiLSTM với attention (0,7422) là 0,0455, với khoảng 95\% của chênh lệch là $[+0{,}0400;\,+0{,}0507]$. Nó hơn ở cả ba lớp, nên học chuyển giao tốt hơn học từ đầu trong bài toán này.
+    \item \textbf{Neutral là điểm yếu của cả hai mô hình} (F1 0,49 và 0,55): chúng dự đoán nó quá nhiều, và dịch ngưỡng chỉ giúp BiLSTM.
+    \item \textbf{Chi phí.} BERT cần gấp 19 lần thời gian huấn luyện và 17,5 lần số tham số của BiLSTM để có thêm 0,0455 Macro-F1.
+\end{itemize}
+
+\section{Hạn chế}
+\label{sec:8-2}
+
+Các hạn chế được liệt kê cùng số đo ở Mục~\ref{sec:7-9}. Quan trọng nhất là: nhãn sao không phải lúc nào cũng khớp với văn bản; cách chia ngẫu nhiên không đo hiệu năng trên review tương lai; mỗi mô hình chỉ chạy một lần; và mô hình BERT chỉ được fine-tune hai epoch, với Macro-F1 validation vẫn đang tăng.
+
+\section{Hướng phát triển}
+\label{sec:8-3}
+
+\begin{enumerate}
+    \item \textbf{Fine-tune BERT lâu hơn hoặc lặp lại} (nhiều epoch hơn, nhiều seed), và các bộ mã hoá mạnh hơn như RoBERTa-base hay DeBERTa-v3, để kiểm tra điểm của BERT có phải là cận dưới không.
+    \item \textbf{Chia theo thời gian} (huấn luyện đến 2011, kiểm tra trên 2012) để đo hiệu năng trên review sau này và ảnh hưởng của việc phân bố nhãn trôi.
+    \item \textbf{Vector từ tiền huấn luyện} (GloVe, fastText) cho embedding của BiLSTM, để xem khoảng cách với BERT có thu hẹp không.
+    \item \textbf{Các cách xử lý mất cân bằng khác} (focal loss, oversampling), vì trọng số neutral lớn có thể gây việc dự đoán neutral quá nhiều.
+    \item \textbf{Cắt đầu và đuôi} cho review dài, nơi cả hai mô hình đạt điểm thấp nhất.
+    \item \textbf{Một mẫu nhỏ do con người gán nhãn}, không dựa vào số sao, để đo bao nhiêu lỗi là do nhãn nhiễu.
+\end{enumerate}
+
+\section{Khả năng tái lập}
+\label{sec:8-4}
+
+Cách chia dùng seed và quy tắc cố định, và mọi dự đoán trên tập test đều được lưu, nên mọi bảng ở Chương~\ref{ch:evaluation} có thể tính lại từ đó. Mã nguồn gồm một notebook (làm sạch, tìm hiểu và chuẩn bị dữ liệu, BiLSTM, BERT và đánh giá) và một gói dùng chung \texttt{src/}.

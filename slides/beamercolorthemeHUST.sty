@@ -1,0 +1,52 @@
+%% beamercolorthemeHUST.sty -- Color definitions for the HUST Beamer theme
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{beamercolorthemeHUST}[2026/10/26 HUST Beamer color theme]
+
+\mode<presentation>
+
+%% Base structure
+\setbeamercolor{structure}{fg=hustmain}
+\setbeamercolor{normal text}{fg=hustblack, bg=white}
+\setbeamercolor{alerted text}{fg=hustalert}
+\setbeamercolor{example text}{fg=hustexample}
+
+%% Title and Header
+\setbeamercolor{title}{fg=hustcover}
+\setbeamercolor{subtitle}{fg=hustblack}
+\setbeamercolor{author}{fg=hustaccent}
+\setbeamercolor{institute}{fg=hustblack}
+\setbeamercolor{date}{fg=hustblack}
+
+\setbeamercolor{frametitle}{fg=white, bg=hustmain}
+\setbeamercolor{framesubtitle}{fg=hustsubyellow}
+
+%% Lists / items
+\setbeamercolor{item}{fg=hustmain}
+\setbeamercolor{subitem}{fg=hustaccent}
+\setbeamercolor{subsubitem}{fg=hustmain}
+\setbeamercolor{description item}{fg=hustmain}
+\setbeamercolor{enumerate item}{fg=hustmain}
+\setbeamercolor{enumerate subitem}{fg=hustaccent}
+
+%% Standard Blocks
+\setbeamercolor{block title}{fg=white, bg=hustmain}
+\setbeamercolor{block body}{fg=hustblack, bg=hustmain!7}
+
+%% Alert Blocks
+\setbeamercolor{block title alerted}{fg=white, bg=hustalert}
+\setbeamercolor{block body alerted}{fg=hustblack, bg=hustalert!8}
+
+%% Example Blocks
+\setbeamercolor{block title example}{fg=white, bg=hustexample}
+\setbeamercolor{block body example}{fg=hustblack, bg=hustexample!8}
+
+%% Table of Contents
+\setbeamercolor{section in toc}{fg=hustmain}
+\setbeamercolor{subsection in toc}{fg=hustblack}
+
+%% Footer
+\setbeamercolor{footline}{fg=hustmain}
+\setbeamercolor{page number in head/foot}{fg=hustmain}
+
+\mode<all>
+\endinput

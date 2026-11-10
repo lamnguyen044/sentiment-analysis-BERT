@@ -1,0 +1,164 @@
+\section{Mục tiêu}
+\label{sec:6-1}
+
+Huấn luyện hai mạng nơ-ron trên cùng tập train và chấm chúng, cùng quy tắc ``luôn đoán positive'', trên cùng các review test (Chương~\ref{ch:data-preparation}): BiLSTM với attention huấn luyện từ đầu (Mục~\ref{sec:6-3}), và bộ mã hoá BERT được fine-tune trên dữ liệu (Mục~\ref{sec:6-5}). Quy tắc luôn đoán positive là mốc tham chiếu, không được huấn luyện. Mục~\ref{sec:6-bg} trước hết giải thích LSTM, BiLSTM, attention và BERT là gì và vì sao được dùng.
+
+Cả hai mạng đều dùng cross-entropy có trọng số lớp của Mục~\ref{sec:5-7}, chọn cấu hình chỉ trên tập validation và đọc tập test một lần. Mọi con số trong chương này đến từ các lần chạy huấn luyện và validation; kết quả trên test nằm ở Chương~\ref{ch:evaluation}.
+
+\section{Nền tảng: vì sao dùng mô hình chuỗi và Transformer}
+\label{sec:6-bg}
+
+Mục này giới thiệu, ở mức độ các mục sau cần, các khái niệm đứng sau hai mô hình nơ-ron và lý do dùng từng mô hình trong bài toán này.
+
+\subsection*{Vì sao thứ tự từ quan trọng}
+
+Một mô hình chỉ đếm từ và cặp từ không phân biệt được ``not good'' với ``good'' khi từ phủ định cách hai từ trở lên (``not really all that good''), và không biết ai được khen trong câu ``the coffee was fine but the delivery was awful''. Mục~\ref{sec:4-8} cho thấy các từ đơn như \emph{good} xuất hiện ở cả ba lớp, và các cặp từ phân biệt lớp tốt hơn. Một mô hình đọc review \emph{theo thứ tự} và mang thông tin từ các từ trước sang các từ sau có thể dùng được ngữ cảnh này. Hai họ mô hình như vậy được sử dụng.
+
+\subsection*{Mạng hồi quy và LSTM}
+
+Mạng hồi quy đọc từng từ một và giữ một trạng thái ẩn $h_t$ tóm tắt mọi thứ đã đọc. Mạng hồi quy thuần làm mất thông tin trên văn bản dài, vì gradient dùng để huấn luyện nó co lại sau mỗi bước (vấn đề \emph{vanishing gradient}). Đơn vị \textbf{Long Short-Term Memory} (LSTM) khắc phục điều này bằng một ô nhớ $c_t$ và ba cổng quyết định cái gì được quên, cái gì được ghi và cái gì được xuất ra:
+\begin{align*}
+    f_t &= \sigma(W_f[h_{t-1},x_t]+b_f), & i_t &= \sigma(W_i[h_{t-1},x_t]+b_i),\\
+    o_t &= \sigma(W_o[h_{t-1},x_t]+b_o), & c_t &= f_t\odot c_{t-1} + i_t\odot\tanh(W_c[h_{t-1},x_t]+b_c),\\
+    h_t &= o_t\odot\tanh(c_t), & &
+\end{align*}
+trong đó $x_t$ là vector của từ thứ $t$ và $\sigma$ là hàm logistic. Ô nhớ $c_t$ chỉ thay đổi qua phép cộng và phép nhân từng phần tử với cổng, nên thông tin, và cả gradient, có thể đi qua nhiều từ. Vì vậy LSTM phù hợp với review dài từ vài chục đến vài trăm từ.
+
+\subsection*{Vì sao hai chiều và vì sao attention}
+
+LSTM một chiều đọc từ trái sang phải, nên trạng thái tại một từ chỉ biết các từ đứng trước. \textbf{LSTM hai chiều} (BiLSTM) chạy thêm một LSTM từ phải sang trái và ghép hai trạng thái, $h_t=[\overrightarrow{h_t};\overleftarrow{h_t}]$. Khi đó trạng thái tại mỗi từ phụ thuộc vào các từ ở cả hai phía, điều có ích khi nghĩa của một từ được quyết định bởi phần theo sau (``\emph{good} \ldots{} but not worth the price'').
+
+Cảm xúc của một review không do mọi từ mang như nhau. \textbf{Attention pooling} học một trọng số $\alpha_t$ cho từng vị trí và tạo vector review bằng tổng có trọng số của các trạng thái (công thức ở Mục~\ref{sec:6-3}), thay vì chỉ giữ trạng thái cuối, nơi các từ đầu yếu nhất. Các trọng số còn có thể hiển thị trên văn bản, làm mô hình có thể kiểm tra được.
+
+BiLSTM với attention được chọn vì nó là mô hình chuỗi nhỏ, tiêu chuẩn cho bài toán cảm xúc, có thể huấn luyện từ đầu trên dữ liệu này trong vài phút, đọc ngữ cảnh theo cả hai chiều và có thể kiểm tra.
+
+\subsection*{Transformer và BERT}
+
+Mạng hồi quy truyền thông tin từ từ này sang từ khác, nên hai từ ở xa chỉ liên kết với nhau qua nhiều bước. \textbf{Transformer} thay điều đó bằng \emph{self-attention}: mỗi token so sánh trực tiếp với mọi token khác của review,
+\begin{equation*}
+    \text{Attention}(Q,K,V)=\operatorname{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right)V,
+\end{equation*}
+trong đó truy vấn $Q$, khoá $K$ và giá trị $V$ là các phép biến đổi tuyến tính của vector token. Nhiều \emph{đầu} (head) như vậy chạy song song, và một vector cho vị trí của mỗi token được cộng vào vì tự thân self-attention bỏ qua thứ tự. Một chồng các lớp như vậy là một \emph{bộ mã hoá} (encoder).
+
+\textbf{BERT} (Bidirectional Encoder Representations from Transformers) là một bộ mã hoá Transformer đã được các tác giả của nó \emph{tiền huấn luyện} trên lượng rất lớn văn bản tiếng Anh (Wikipedia và BookCorpus) mà không có nhãn cảm xúc nào. Nhiệm vụ của nó là đoán các từ bị che trong văn bản (masked language modelling) và đoán một câu có theo sau câu kia hay không. Điều này dạy mạng ngữ pháp, nghĩa của từ theo ngữ cảnh và các mẫu phủ định thường gặp. Văn bản được tách thành các sub-word WordPiece, nên một từ hiếm trở thành các mảnh đã biết (\emph{unbelievable} $\to$ \emph{un}, \emph{\#\#bel}, \emph{\#\#ie}, \ldots) và không có từ nào là chưa biết. Token đầu tiên của mọi đầu vào là token đặc biệt \texttt{[CLS]}, có vector cuối đại diện cho cả văn bản.
+
+\textbf{Fine-tune} là \emph{học chuyển giao}: một lớp đầu ra nhỏ cho ba lớp được thêm lên vector \texttt{[CLS]}, và toàn bộ mạng đã tiền huấn luyện được huấn luyện thêm một chút trên các review có nhãn, với learning rate nhỏ để tri thức đã học được điều chỉnh chứ không bị xoá. Khác với BiLSTM, vốn học ngôn ngữ chỉ từ 315.000 review train, BERT bắt đầu với tri thức từ hàng tỉ từ, và dự án kiểm tra điều đó giúp được bao nhiêu. \texttt{bert-base-uncased} là cỡ nhỏ hơn trong hai cỡ gốc (12 lớp, 109 triệu tham số) và chuyển văn bản sang chữ thường, giúp cách thiết lập đơn giản.
+
+\section{BiLSTM với attention}
+\label{sec:6-3}
+
+\subsection*{Đầu vào}
+
+Văn bản đầu vào của Mục~\ref{sec:5-3} được chuyển chữ thường và tách bằng một biểu thức chính quy giữ lại các dạng rút gọn (\emph{don't}) và dấu \texttt{!} và \texttt{?}. Từ điển gồm các từ xuất hiện ít nhất ba lần trong tập train, giới hạn 50.000; kết quả có 46.760 mục, gồm cả ký hiệu padding và ký hiệu từ lạ. Nó phủ 99,71\% số token train. Mỗi review bị cắt ở 200 từ, tức cắt 6,47\% số review train. Các batch 256 review được tạo bằng cách gom theo độ dài: dữ liệu được xáo trộn, chia thành các khối, sắp theo độ dài trong mỗi khối và cắt thành batch, để các review có độ dài gần nhau chung một batch và padding nhỏ. Mỗi epoch có 1.230 batch.
+
+\subsection*{Kiến trúc}
+
+\begin{center}
+\begin{tabular}{@{}p{3.6cm}p{10.4cm}@{}}
+    \toprule
+    Lớp & Vai trò \\
+    \midrule
+    Embedding $46.760\times128$ & một vector học được cho mỗi từ, dropout 0,3 \\
+    BiLSTM, 128 đơn vị mỗi chiều & đọc review từ trái sang phải và từ phải sang trái; trạng thái tại vị trí $t$ là $h_t\in\mathbb{R}^{256}$ \\
+    Attention pooling & gán trọng số cho mỗi vị trí và cộng các trạng thái \\
+    Dropout 0,3, Linear $256\to3$ & điểm số các lớp \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+Lớp attention chấm điểm từng trạng thái, chuẩn hoá điểm trên các vị trí thật (không phải padding) và dùng tổng có trọng số làm vector review:
+\begin{equation*}
+    e_t = \mathbf{w}^\top h_t,\qquad
+    \alpha_t = \frac{\exp(e_t)}{\sum_k \exp(e_k)},\qquad
+    \mathbf{c} = \sum_t \alpha_t h_t .
+\end{equation*}
+Các vị trí padding được gán điểm $-10^{9}$ trước softmax nên trọng số của chúng bằng không. Mô hình có 6.250.500 tham số huấn luyện được, trong đó 5.985.280 là embedding.
+
+\subsection*{Huấn luyện}
+
+\begin{center}
+\begin{tabular}{@{}p{5cm}p{9cm}@{}}
+    \toprule
+    Thiết lập & Giá trị \\
+    \midrule
+    Optimizer & AdamW, learning rate $2\times10^{-3}$, weight decay $10^{-4}$ \\
+    Lịch learning rate & giảm một nửa khi Macro-F1 validation không cải thiện \\
+    Cắt gradient & chuẩn 1,0 \\
+    Epoch, early stopping & tối đa 5; dừng sau 2 epoch không cải thiện; giữ epoch tốt nhất \\
+    Seed & 42 \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+Lần chạy dùng đủ 5 epoch; Macro-F1 validation tốt nhất là 0,7504 ở epoch 4, và mô hình của epoch đó được giữ. Huấn luyện mất 3,4 phút trên một GPU Tesla T4.
+
+\begin{center}
+\small
+\begin{tabular}{@{}rrrrrr@{}}
+    \toprule
+    Epoch & Loss train & Loss validation & Accuracy validation & Macro-F1 validation & Learning rate \\
+    \midrule
+    1 & 0,6168 & 0,5283 & 0,8646 & 0,7275 & 0,002 \\
+    2 & 0,4956 & 0,5292 & 0,8830 & 0,7469 & 0,002 \\
+    3 & 0,4549 & 0,5049 & 0,8614 & 0,7318 & 0,002 \\
+    4 & 0,4100 & 0,5376 & 0,8820 & \textbf{0,7504} & 0,001 \\
+    5 & 0,3894 & 0,5342 & 0,8772 & 0,7469 & 0,001 \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+Loss train giảm đều trong khi loss validation quanh 0,53 và thấp nhất ở epoch 3, dấu hiệu overfitting từ khoảng epoch 3 hoặc 4. Epoch được chọn theo Macro-F1, không theo loss validation, và chênh lệch giữa các epoch cuối (khoảng 0,003) là nhỏ.
+
+\section{Fine-tune BERT}
+\label{sec:6-5}
+
+\texttt{bert-base-uncased} là bộ mã hoá Transformer 12 lớp (kích thước ẩn 768, 12 đầu attention) được tiền huấn luyện trên Wikipedia và BookCorpus. Một lớp ba lớp mới được đặt lên biểu diễn của token \texttt{[CLS]} và toàn bộ mạng được huấn luyện. Cấu hình là một lần chạy duy nhất, không tìm kiếm siêu tham số.
+
+\begin{center}
+\begin{tabular}{@{}p{5cm}p{9cm}@{}}
+    \toprule
+    Thiết lập & Giá trị \\
+    \midrule
+    Token hoá & WordPiece, cắt ở 256 token; padding động và gom theo độ dài \\
+    Cắt bớt & khoảng 6,2\% số review (đo trên 3.000 review train; độ dài trung vị 80, phân vị 90 là 207 token) \\
+    Batch, epoch & 32 review, 2 epoch; 9.840 bước mỗi epoch, tổng 19.680 \\
+    Optimizer & AdamW, learning rate $3\times10^{-5}$, weight decay 0,01 (không áp cho bias và LayerNorm) \\
+    Lịch learning rate & warm-up tuyến tính trong 10\% bước đầu, rồi giảm tuyến tính về 0 \\
+    Khác & fp16 mixed precision, cắt gradient 1,0, seed 42 \\
+    Số tham số & 109.484.547 \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+Sau mỗi epoch mô hình được chấm trên tập validation và được lưu nếu Macro-F1 là tốt nhất từ trước đến giờ; không có early stopping. Mỗi epoch mất 32,2 phút trên Tesla T4, tổng 64,4 phút.
+
+\begin{center}
+\begin{tabular}{@{}rrrr@{}}
+    \toprule
+    Epoch & Loss train & Accuracy validation & Macro-F1 validation \\
+    \midrule
+    1 & 0,4943 & 0,8884 & 0,7664 \\
+    2 & 0,3517 & 0,9069 & \textbf{0,7864} \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+Macro-F1 validation vẫn đang tăng ở epoch cuối, nên mô hình chưa bão hoà và có thể tốt hơn nếu huấn luyện thêm epoch; với hai epoch thì chưa quan sát được overfitting.
+
+\section{Tóm tắt các mô hình}
+\label{sec:6-7}
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{3.6cm}p{3.6cm}rp{3.6cm}@{}}
+    \toprule
+    Mô hình & Huấn luyện trên dữ liệu này & Số tham số & Chọn trên validation \\
+    \midrule
+    BiLSTM + attention & có, từ đầu & 6,25 triệu & epoch, early stopping \\
+    BERT-base & có, fine-tune & 109,48 triệu & epoch \\
+    Luôn đoán positive & không & 0 & -- \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+Cả hai mạng đều được huấn luyện trên một GPU Tesla T4, nên thời gian huấn luyện của chúng so sánh được.

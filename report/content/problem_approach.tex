@@ -1,0 +1,100 @@
+\section{Review Platforms and Sentiment Monitoring}
+\label{sec:2-1}
+
+A shop that sells through an online marketplace receives feedback as free text. Each review shows how a customer felt about a product, and a collection of them shows which products are praised and which are criticised. Counting reviews by sentiment turns that text into a number that can be tracked over time and compared between products.
+
+\section{Sentiment from Stars: Weak Labels}
+\label{sec:2-2}
+
+The dataset has no sentiment annotation, only the number of stars (1--5) chosen by the reviewer. The stars are used as a \textbf{weak label}: cheap to obtain but only approximately correct. The mapping is fixed once:
+
+\begin{center}
+\begin{tabular}{@{}lccccc@{}}
+    \toprule
+    Stars (\texttt{Score}) & 1 & 2 & 3 & 4 & 5 \\
+    \midrule
+    Label & negative & negative & neutral & positive & positive \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+A reviewer may give five stars and still write a complaint, so some labels are wrong by construction. This is treated as a property of the data, not hidden, and is examined when the errors of the models are analysed.
+
+\section{Business Objectives}
+\label{sec:2-3}
+
+The objective is to classify the sentiment of a review from its text alone. The specific objectives are:
+
+\begin{itemize}
+    \item \textbf{Prepare a trustworthy dataset:} remove repeated reviews before splitting, so the evaluation measures generalisation and not memorisation.
+    \item \textbf{Build two neural classifiers:} a BiLSTM with attention trained from scratch, and a BERT encoder fine-tuned on the same data.
+    \item \textbf{Compare them fairly:} on identical test reviews, with an always-positive rule as reference.
+\end{itemize}
+
+\section{Evaluation Metrics}
+\label{sec:2-4}
+
+Accuracy is not a sufficient measure here, because always answering \emph{positive} already scores about 78\%. For each class $c$, precision, recall and F1 are
+\begin{equation*}
+    P_c = \frac{TP_c}{TP_c+FP_c},\qquad
+    R_c = \frac{TP_c}{TP_c+FN_c},\qquad
+    F1_c = \frac{2\,P_c R_c}{P_c+R_c},
+\end{equation*}
+and the main metric is \textbf{Macro-F1}, the unweighted mean over the three classes:
+\begin{equation*}
+    \text{Macro-F1} = \frac{1}{3}\sum_{c} F1_c .
+\end{equation*}
+Every class counts equally, so the small neutral class weighs as much as the large positive class. Accuracy, weighted F1, the F1 of each class, the confusion matrix, training time and parameter count are reported as well.
+
+\section{Success Criteria}
+\label{sec:2-5}
+
+Success is defined \textbf{relative to simple alternatives} rather than by arbitrary absolute thresholds:
+
+\begin{center}
+\begin{tabular}{@{}p{3cm}p{11.5cm}@{}}
+    \toprule
+    Level & Criterion (evaluated on the unseen test part) \\
+    \midrule
+    Predictive & Each trained model has a higher Macro-F1 than the always-positive rule (about 0.29). \\
+    Transfer learning & The fine-tuned BERT model has a higher Macro-F1 than the BiLSTM trained from scratch, and the paired bootstrap interval of the difference does not contain 0. \\
+    Minority classes & The F1 of the negative and neutral classes is reported separately and is above 0 for every model. \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\section{From Objective to Analytical Problem}
+\label{sec:2-6}
+
+The input is the English text of one review, made of a short title (\texttt{Summary}) and a body (\texttt{Text}). The output is one label $y \in \{\text{negative}, \text{neutral}, \text{positive}\}$. The task is to learn a function $f_\theta$ from text to $\{0,1,2\}$ by minimising a class-weighted cross-entropy loss on the training part (Section~\ref{sec:5-7}).
+
+\section{Approach}
+\label{sec:2-7}
+
+\begin{center}
+\begin{tabular}{@{}c@{}}
+    \textbf{Raw Reviews} (568{,}454 rows) \\
+    $\downarrow$ \\
+    \textbf{Cleaning} -- remove repeated reviews and invalid rows \\
+    $\downarrow$ \\
+    \textbf{Input Text and Label} -- title $+$ body, label from stars \\
+    $\downarrow$ \\
+    \textbf{Stratified Split} -- train / validation / test, plus a fixed test subset \\
+    $\downarrow$ \\
+    \textbf{Training} -- BiLSTM with attention; BERT fine-tuning; class-weighted loss \\
+    $\downarrow$ \\
+    \textbf{Evaluation} -- Macro-F1, bootstrap intervals, error analysis \\
+\end{tabular}
+\end{center}
+
+\section{Implementation Roadmap}
+\label{sec:2-8}
+
+The approach is implemented as a sequence of steps, each covered by one chapter:
+
+\begin{itemize}
+    \item \textbf{Specify the data} (Chapter~\ref{ch:dataset}) -- source, schema, conventions and what is not available.
+    \item \textbf{Understand the data} (Chapter~\ref{ch:data-understanding}) -- class balance, length, time, noise, vocabulary; these set the metric, the sequence limits and the cleaning rules.
+    \item \textbf{Prepare the data} (Chapter~\ref{ch:data-preparation}) -- clean, build the input text, split, and compute class weights.
+    \item \textbf{Model and evaluate} -- BiLSTM with attention and BERT fine-tuning (Chapter~\ref{ch:modeling}) and the comparison of the models (Chapter~\ref{ch:evaluation}).
+\end{itemize}

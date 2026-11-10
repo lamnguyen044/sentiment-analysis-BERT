@@ -1,0 +1,121 @@
+\documentclass[a4paper,11pt]{report}
+
+% ---- Page layout ----
+\usepackage[margin=2.5cm]{geometry}
+
+% ---- Fonts (XeLaTeX) ----
+\usepackage{fontspec}
+
+% ---- Typography & links ----
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks = true,
+    linkcolor  = blue!50!black,
+    citecolor  = blue!50!black,
+    urlcolor   = blue!50!black
+}
+
+% ---- Math ----
+\usepackage{amsmath,amssymb,mathtools}
+
+% ---- Figures, tables, listings ----
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
+\usepackage{listings}
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    language=Python,
+    keywordstyle=\color{blue!60!black},
+    commentstyle=\color{gray},
+    columns=fullflexible
+}
+
+% ---- Header / footer ----
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\rfoot{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace*{3cm}
+
+    {\LARGE\bfseries Sentiment Analysis of Amazon Fine Food Reviews}\\[0.4cm]
+    {\Large A Three-Class Sentiment Classifier with Deep Learning}\\[2cm]
+
+    \rule{0.8\linewidth}{0.6pt}\\[0.5cm]
+    {\large Introduction to Deep Learning Project Report}\\[0.2cm]
+    \rule{0.8\linewidth}{0.6pt}
+
+    \vfill
+
+    \begin{tabular}{ll}
+        \textbf{Instructor:} & Dr. Trần Việt Trung \\
+    \end{tabular}
+
+    \vspace{0.8cm}
+
+    \textbf{Student}\\[0.3cm]
+    \begin{tabular}{ll}
+        Nguyễn Tuệ Lâm & 20261207M \\
+    \end{tabular}
+
+    \vspace{1cm}
+    {\large \today}
+
+    \vspace*{1cm}
+\end{titlepage}
+
+\tableofcontents
+
+\chapter{Introduction}
+\label{ch:introduction}
+\input{content/introduction}
+
+\chapter{Problem Statement and Approach}
+\label{ch:problem-approach}
+\input{content/problem_approach}
+
+\chapter{Dataset and Data Specification}
+\label{ch:dataset}
+\input{content/dataset}
+
+\chapter{Data Understanding}
+\label{ch:data-understanding}
+\input{content/data_understanding}
+
+\chapter{Data Preparation}
+\label{ch:data-preparation}
+\input{content/data_preparation}
+
+\chapter{Modeling}
+\label{ch:modeling}
+\input{content/modeling}
+
+\chapter{Evaluation}
+\label{ch:evaluation}
+\input{content/evaluation}
+
+\chapter{Conclusion}
+\label{ch:conclusion}
+\input{content/conclusion}
+
+\begin{thebibliography}{9}
+\bibitem{mcauley2013} J.~McAuley and J.~Leskovec. From amateurs to connoisseurs: modeling the evolution of user expertise through online reviews. In \emph{Proceedings of the 22nd International Conference on World Wide Web (WWW)}, 2013.
+\bibitem{kaggle_fine_food} Stanford Network Analysis Project. Amazon Fine Food Reviews (Kaggle dataset \texttt{snap/amazon-fine-food-reviews}). \url{https://www.kaggle.com/datasets/snap/amazon-fine-food-reviews}.
+\end{thebibliography}
+
+\end{document}

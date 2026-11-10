@@ -1,0 +1,28 @@
+# Large data and model weights (regenerate with the notebooks; see README)
+dataset/*.csv
+outputs/data/
+*.safetensors
+*.pt
+
+# Python / Jupyter
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# LaTeX build files (the PDFs are kept)
+*.aux
+*.log
+*.out
+*.toc
+*.xdv
+*.fls
+*.fdb_latexmk
+*.nav
+*.snm
+*.synctex.gz
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+dataset/*.sqlite

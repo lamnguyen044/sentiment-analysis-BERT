@@ -1,0 +1,6 @@
+{
+  "name": "BERT fine-tune",
+  "train_time_s": 3866.9174246788025,
+  "infer_time_s": 83.0839319229126,
+  "n_params": 109484547
+}

@@ -1,0 +1,1040 @@
+%% hust-core.sty -- shared options, brand colours and geometry for the HUST Beamer theme
+%%
+%% Everything that depends on the paper ratio lives here as *fractions* of the
+%% page width / height, measured from the official PPTX templates (16:9 and 4:3).
+%% Ratios other than 16:9 / 4:3 (5:4, 16:10, 14:9, 3:2 ...) use the closest of
+%% the two measured sets (wide set for width/height >= 1.55, otherwise 4:3 set).
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{hust-core}[2026/10/26 HUST Beamer theme: options, colours, geometry]
+
+\RequirePackage{iftex}
+\RequirePackage{fontspec}
+\RequirePackage{xcolor}
+\RequirePackage{colortbl}
+\RequirePackage{pgfkeys}
+\RequirePackage{pgfopts}
+\RequirePackage{graphicx}
+\RequirePackage{tikz}
+\ifPDFTeX
+  \PackageError{hust-core}{The HUST theme needs LuaLaTeX or XeLaTeX}{%
+    It uses fontspec for Lato / Arial / Times New Roman.^^J%
+    TeXstudio: Options > Configure TeXstudio > Build > Default Compiler = LuaLaTeX (or XeLaTeX).}
+\fi
+
+%% ------------------------------------------------------------------ colours
+%% Source: "Sổ tay nhận diện thương hiệu ĐHBK Hà Nội", Quy chuẩn về màu sắc.
+\definecolor{hustnavy}{HTML}{003366}    % secondary system  RGB 0,51,102
+\definecolor{hustred}{HTML}{C02034}     % secondary system  RGB 192,32,52
+\definecolor{hustorange}{HTML}{F57F20}  % secondary system  RGB 245,127,32
+\definecolor{hustcrimson}{HTML}{CE1628} % primary system    RGB 206,22,40
+\definecolor{hustyellow}{HTML}{F3C108}  % primary system    RGB 243,193,8
+\definecolor{hustblack}{HTML}{231F20}   % primary system    RGB 35,31,32
+%% Measured from the red PPTX deck (rule under the header band); not in the guide.
+\definecolor{hustamber}{HTML}{E59C0A}
+%% Measured from red PPTX welcome/dark slide dots (#F05C5D / RGB 240,92,93).
+%% Formed by a ~40% tint / +20% lightness wash from solid HUST red over background.
+\definecolor{hustlightred}{HTML}{F05C5D}
+\definecolor{hustlightblue}{HTML}{5B9BD5}
+\definecolor{hustgray}{HTML}{A6A6A6}
+%% Tuned high-contrast yellow for framesubtitle against blue and red header bands
+\definecolor{hustsubyellow}{HTML}{FFDE59}
+
+%% Brand color aliases & User macro colors
+\colorlet{HUSTCrimson}{hustcrimson}
+\colorlet{HUSTNavy}{hustnavy}
+\colorlet{HUSTBlue}{hustnavy}
+\colorlet{HUSTOrange}{hustorange}
+\colorlet{HUSTYellow}{hustyellow}
+\colorlet{HUSTBlack}{hustblack}
+\colorlet{HUSTRed}{hustcrimson}
+\definecolor{HUSTPink}{RGB}{192, 32, 53}
+\definecolor{HUSTGrey}{RGB}{85, 88, 91}
+\colorlet{HUSTGray}{hustgray}
+\colorlet{HUSTLightRed}{hustlightred}
+\colorlet{HUSTLightBlue}{hustlightblue}
+\colorlet{HUSTSubYellow}{hustsubyellow}
+\definecolor{HUSTWhite}{RGB}{255, 255, 255}
+\colorlet{HUSTAmber}{hustamber}
+\definecolor{titlepagecolor}{cmyk}{1,.60,0,.40}
+
+%% ------------------------------------------------------------------ assets
+\graphicspath{{assets/}{./assets/}{hust-beamer/assets/}{./hust-beamer/assets/}}
+
+%% ------------------------------------------------------- ratio -> profile
+\newif\ifhust@wide
+\ifdim\dimexpr\paperwidth*20\relax<\dimexpr\paperheight*31\relax
+  \hust@widefalse   % width/height < 1.55  -> 4:3 measurements
+\else
+  \hust@widetrue    % width/height >= 1.55 -> 16:9 measurements
+\fi
+
+\newcommand*\hust@param[3]{%
+  \ifhust@wide\expandafter\def\csname hustp@#1\endcsname{#2}%
+  \else\expandafter\def\csname hustp@#1\endcsname{#3}\fi}
+\newcommand*\hust@fW[1]{\dimexpr\csname hustp@#1\endcsname\paperwidth\relax}
+\newcommand*\hust@fH[1]{\dimexpr\csname hustp@#1\endcsname\paperheight\relax}
+
+%%                 name         16:9      4:3
+%% header band / rule (fractions of page height)
+\hust@param{bandB}{0.0927}{0.0927}   % bottom edge of the coloured header band (thick mode)
+\hust@param{bandThinB}{0.1080}{0.1100}% bottom edge of the coloured header band (thin mode: taller for comfortable padding)
+\hust@param{titleY}{0.0160}{0.0160}  % top padding for two-line frametitle + subtitle
+\hust@param{ruleT}{0.1160}{0.1180}   % top edge of the accent rule / bar
+\hust@param{thinB}{0.1236}{0.1256}   % bottom edge of the thin rule
+\hust@param{thickB}{0.1622}{0.1622}  % bottom edge of the thick bar
+%% text area
+\hust@param{bodyTopThin}{0.1544}{0.1404}
+\hust@param{bodyTopThick}{0.2050}{0.1770}
+\hust@param{bodyBot}{0.8850}{0.9250}
+\hust@param{mL}{0.0278}{0.0257}      % left = right text margin (fraction of width)
+%% footer: rule + logo, everything centred on footY
+\hust@param{footY}{0.9329}{0.9390}
+\hust@param{footLineH}{0.0026}{0.0034}
+\hust@param{footX}{0.0260}{0.0250}   % left edge of the footer logo
+\hust@param{footXend}{0.9740}{0.9750}% right end of the footer rule
+\hust@param{fullW}{0.2433}{0.2595}   % logo widths (fraction of page width)
+\hust@param{markW}{0.0261}{0.0280}
+\hust@param{wordmarkW}{0.1004}{0.1070}
+\hust@param{hustW}{0.1004}{0.1070}
+\hust@param{gapfull}{0.0270}{0.0185}  % space between logo and rule start
+\hust@param{gapmark}{0.0130}{0.0145}
+\hust@param{gapwordmark}{0.0255}{0.0220}
+\hust@param{gaphust}{0.0255}{0.0220}
+\hust@param{numR}{0.9760}{0.9760}    % slide-number right edge (fraction of width)
+\hust@param{numY}{0.9734}{0.9843}    % slide-number vertical centre
+%% cover (white slide with ring on the right)
+\hust@param{coverLogoX}{0.0317}{0.0452}
+\hust@param{coverLogoY}{0.0483}{0.0581}
+\hust@param{coverLogoW}{0.2604}{0.2228}
+\hust@param{coverLogoH}{0.1111}{0.1150}
+\hust@param{coverTitleY}{0.3236}{0.3530}
+\hust@param{coverTextW}{0.6020}{0.8030}
+\hust@param{coverAuthorW}{0.5200}{0.4000}
+\hust@param{sloganY}{0.0800}{0.0800}
+
+\definecolor{hustgrayline}{HTML}{A6A6A6}
+\definecolor{famiblue}{HTML}{0062A5}
+%% Light background tint (40% tint / +20% lightness wash from solid halftone dots over white)
+\colorlet{hustcoverlightred}{hustlightred!35!white}
+\colorlet{hustcoverlightblue}{hustlightblue!35!white}
+
+%% ------------------------------------------------------------ user options
+\def\hust@fontsel{lato}
+\def\hust@tfontsel{avantgarde}
+\def\hust@coverbg{cover}
+\def\hust@footertext{}
+\def\hust@lefttext{}
+\def\hust@slogantext{ONE LOVE. ONE FUTURE.}
+\def\hust@val@hidden{Hidden}
+\def\hust@val@hidden@lower{hidden}
+\def\hust@val@none{none}
+\def\husttoctitle{Nội dung chính}
+\def\husttocsubtitle{}
+\def\hustreftitle{Tài liệu tham khảo}
+\def\hustrefsubtitle{}
+\newif\ifhust@sec@showpanel
+\hust@sec@showpaneltrue
+\def\hust@logounit{}
+\def\hust@logovn{ĐẠI HỌC BÁCH KHOA HÀ NỘI}
+\def\hust@logoen{HANOI UNIVERSITY OF SCIENCE AND TECHNOLOGY}
+\def\hust@logomode{vector}
+\def\hust@logolayout{2}
+\def\hust@logotwoimage{}
+\def\hust@logotwovn{KHOA TOÁN - TIN}
+\def\hust@logotwoen{Faculty of Mathematics and Informatics}
+\def\hust@logotwocolor{famiblue}
+\def\hust@logotwolayout{1}
+\def\hust@logotwosep{rule}
+\newif\ifhust@dateaddress
+\hust@dateaddresstrue
+\def\hust@date@address{Hà Nội}
+\newif\ifhust@footermeta
+\hust@footermetafalse
+\def\hust@footer@author{}
+\def\hust@footer@title{}
+\def\hust@footer@date{}
+\def\hust@recorded@shortdate{}
+\def\hust@citemaxlines{4}
+\def\hust@citetitlemax{0}
+\def\hust@citejournalmax{0}
+\def\hust@citeauthormax{0}
+\def\hust@footertitlemax{-1}
+\def\hust@footerauthormax{-1}
+\def\hust@citecolumns{auto}
+\def\hust@citemax{8}
+\def\hust@headerright{off}
+\def\hust@headerlogo{}
+\def\hust@framebg{off}
+\def\hust@framebg@col{auto}
+\def\hust@framebg@opacity{0.08}
+\def\hust@framebg@height{auto}
+\def\hust@val@auto{auto}
+\def\hust@coverlight@opacity{0.18}
+
+%% UTF-8 safe word-boundary string truncation for footer citations & notes
+\ifdefined\directlua
+\directlua{
+  function hust_utf8_truncate(str, max_len)
+    max_len = tonumber(max_len) or 35
+    if max_len <= 0 or not str or str == "" then
+      tex.sprint(str or "")
+      return
+    end
+    local ulen = unicode.utf8.len(str)
+    if not ulen or ulen <= max_len then
+      tex.sprint(str)
+      return
+    end
+    local sub = unicode.utf8.sub(str, 1, max_len)
+    local lb = string.char(123)
+    local rb = string.char(125)
+    local dl = string.char(36)
+    local depth = 0
+    local in_math = false
+    local last_space = nil
+    local min_cut = math.floor(max_len * 0.55)
+    for i = 1, max_len do
+      local ch = unicode.utf8.sub(sub, i, i)
+      if ch == dl then
+        in_math = not in_math
+      elseif ch == lb then
+        depth = depth + 1
+      elseif ch == rb and depth > 0 then
+        depth = depth - 1
+      elseif ch == " " and depth == 0 and not in_math and i >= min_cut then
+        last_space = i - 1
+      end
+    end
+    if last_space and last_space > 0 then
+      sub = unicode.utf8.sub(sub, 1, last_space)
+    end
+    while string.len(sub) > 0 do
+      local lastc = string.sub(sub, -1)
+      if lastc == " " or lastc == "," or lastc == ";" or lastc == ":" or lastc == "." or lastc == "-" then
+        sub = string.sub(sub, 1, -2)
+      else
+        break
+      end
+    end
+    local open_b = 0
+    local open_m = false
+    for i = 1, string.len(sub) do
+      local c = string.sub(sub, i, i)
+      if c == dl then open_m = not open_m
+      elseif c == lb then open_b = open_b + 1
+      elseif c == rb and open_b > 0 then open_b = open_b - 1 end
+    end
+    if open_m then sub = sub .. dl end
+    if open_b > 0 then sub = sub .. string.rep(rb, open_b) end
+    tex.sprint(sub .. "...")
+  end
+}
+\newcommand{\husttruncate}[2]{%
+  \directlua{hust_utf8_truncate("\luaescapestring{\unexpanded{#2}}", \number\numexpr#1\relax)}%
+}
+
+%% Width-based string truncation (binary search with font measurement in TeX/Lua)
+\newbox\hust@tbox
+\newdimen\hust@tmax
+\newcount\hust@tlow
+\newcount\hust@thigh
+\newcount\hust@tmid
+\def\hust@tbest{...}
+
+\directlua{
+  hust_t_str = ""
+  function hust_t_set(s)
+    hust_t_str = s
+    return unicode.utf8.len(s)
+  end
+  function hust_t_sub(k)
+    local sub = unicode.utf8.sub(hust_t_str, 1, k)
+    while string.sub(sub, -1) == " " do
+      sub = string.sub(sub, 1, -2)
+    end
+    local bs = string.match(sub, "\\+$")
+    if bs and math.fmod(string.len(bs), 2) == 1 then
+      sub = string.sub(sub, 1, -2)
+    end
+    local dl = string.char(36)
+    local lb = string.char(123)
+    local rb = string.char(125)
+    local open_b = 0
+    local open_m = false
+    for i = 1, string.len(sub) do
+      local c = string.sub(sub, i, i)
+      if c == dl then open_m = not open_m
+      elseif c == lb then open_b = open_b + 1
+      elseif c == rb and open_b > 0 then open_b = open_b - 1 end
+    end
+    if open_m then sub = sub .. dl end
+    if open_b > 0 then sub = sub .. string.rep(rb, open_b) end
+    tex.sprint(sub .. "...")
+  end
+}
+
+\newcommand{\husttruncateto}[3]{%
+  \begingroup
+    #2\relax
+    \protected@edef\hust@t@str{#3}%
+    \setbox\hust@tbox=\hbox{\hust@t@str}%
+    \ifdim\wd\hust@tbox>#1\relax
+      \hust@tmax=#1\relax
+      \hust@thigh=\directlua{tex.sprint(hust_t_set("\luaescapestring{\hust@t@str}"))}\relax
+      \hust@tlow=1\relax
+      \def\hust@tbest{...}%
+      \hust@tloop{#2}%
+      \hust@tbest
+    \else
+      \hust@t@str
+    \fi
+  \endgroup
+}
+
+\def\hust@tloop#1{%
+  \ifnum\hust@tlow>\hust@thigh\else
+    \hust@tmid=\numexpr(\hust@tlow + \hust@thigh) / 2\relax
+    \begingroup
+      #1\relax
+      \setbox\hust@tbox=\hbox{\directlua{hust_t_sub(\the\hust@tmid)}}%
+      \ifdim\wd\hust@tbox>\hust@tmax\relax
+        \global\hust@thigh=\numexpr\hust@tmid - 1\relax
+      \else
+        \global\let\hust@tmpbest\relax
+        \xdef\hust@tmpbest{\directlua{hust_t_sub(\the\hust@tmid)}}%
+        \global\hust@tlow=\numexpr\hust@tmid + 1\relax
+      \fi
+    \endgroup
+    \ifx\hust@tmpbest\relax\else
+      \let\hust@tbest\hust@tmpbest
+      \global\let\hust@tmpbest\relax
+    \fi
+    \hust@tloop{#1}%
+  \fi
+}
+\let\husttruncatetowidth\husttruncateto
+\else
+\newcommand{\husttruncate}[2]{#2}
+\newcommand{\husttruncateto}[3]{#3}
+\let\husttruncatetowidth\husttruncateto
+\fi
+
+\pgfkeys{/hust/.cd,
+  color/.is choice,
+  color/blue/.code={%
+    \def\hust@colname{blue}%
+    \colorlet{hustmain}{hustnavy}       % header band, structure, headings
+    \colorlet{hustaccent}{hustcrimson}   % rule / bar under the band
+    \colorlet{hustalert}{hustcrimson}
+    \colorlet{hustexample}{hustorange}
+    \colorlet{hustcover}{hustnavy}},    % cover title & footer (blue)
+  color/red/.code={%
+    \def\hust@colname{red}%
+    \colorlet{hustmain}{hustred}
+    \colorlet{hustaccent}{hustamber}
+    \colorlet{hustalert}{hustnavy}      % alert is blue in red version
+    \colorlet{hustexample}{hustorange}
+    \colorlet{hustcover}{hustred}},
+  font/.is choice,
+  font/lato/.code={\def\hust@fontsel{lato}},
+  font/arial/.code={\def\hust@fontsel{arial}},
+  font/times/.code={\def\hust@fontsel{times}},
+  font/cm/.code={\def\hust@fontsel{cm}},
+  font/computermodern/.code={\def\hust@fontsel{cm}},
+  titlefont/.is choice,
+  titlefont/same/.code={\def\hust@tfontsel{same}},
+  titlefont/avantgarde/.code={\def\hust@tfontsel{avantgarde}},
+  footerlogo/.is choice,
+  footerlogo/full/.code={\def\hust@flogo{full}},
+  footerlogo/mark/.code={\def\hust@flogo{mark}},
+  footerlogo/wordmark/.code={\def\hust@flogo{wordmark}},
+  footerlogo/hust/.code={\def\hust@flogo{hust}},
+  footerlogo/none/.code={\def\hust@flogo{none}},
+  bar/.is choice,
+  bar/thin/.code={\def\hust@bar{thin}},
+  bar/thick/.code={\def\hust@bar{thick}},
+  titlepage/.is choice,
+  titlepage/cover/.code={\def\hust@titlepage{cover}\def\hust@coverbg{cover}},
+  titlepage/solid/.code={\def\hust@titlepage{cover}\def\hust@coverbg{solid}},
+  titlepage/light/.code={\def\hust@titlepage{cover}\def\hust@coverbg{light}},
+  titlepage/cover-solid/.code={\def\hust@titlepage{cover}\def\hust@coverbg{solid}},
+  titlepage/cover-light/.code={\def\hust@titlepage{cover}\def\hust@coverbg{light}},
+  titlepage/dark/.code={\def\hust@titlepage{dark}},
+  titlepage/welcome/.code={\def\hust@titlepage{welcome}},
+  coverbg/.is choice,
+  coverbg/cover/.code={\def\hust@coverbg{cover}},
+  coverbg/default/.code={\def\hust@coverbg{cover}},
+  coverbg/solid/.code={\def\hust@coverbg{solid}},
+  coverbg/light/.code={\def\hust@coverbg{light}},
+  titlebg/.is choice,
+  titlebg/cover/.code={\def\hust@coverbg{cover}},
+  titlebg/default/.code={\def\hust@coverbg{cover}},
+  titlebg/solid/.code={\def\hust@coverbg{solid}},
+  titlebg/light/.code={\def\hust@coverbg{light}},
+  sectionpage/.is choice,
+  sectionpage/none/.code={\def\hust@sectionpage{none}},
+  sectionpage/panel/.code={\def\hust@sectionpage{panel}},
+  sectionpanel/.is choice,
+  sectionpanel/true/.code={\hust@sec@showpaneltrue},
+  sectionpanel/false/.code={\hust@sec@showpanelfalse},
+  sectionpanel/on/.code={\hust@sec@showpaneltrue},
+  sectionpanel/off/.code={\hust@sec@showpanelfalse},
+  numbering/.is choice,
+  numbering/none/.code={\def\hust@numbering{none}},
+  numbering/plain/.code={\def\hust@numbering{plain}},
+  numbering/fraction/.code={\def\hust@numbering{fraction}},
+  slogan/.is choice,
+  slogan/on/.code={\def\hust@slogan{on}},
+  slogan/true/.code={\def\hust@slogan{on}},
+  slogan/off/.code={\def\hust@slogan{off}},
+  slogan/false/.code={\def\hust@slogan{off}},
+  slogan/none/.code={\def\hust@slogan{off}},
+  slogantext/.store in=\hust@slogantext,
+  wordmark/.is choice,
+  wordmark/on/.code={\def\hust@wordmark{on}},
+  wordmark/true/.code={\def\hust@wordmark{on}},
+  wordmark/off/.code={\def\hust@wordmark{off}},
+  wordmark/false/.code={\def\hust@wordmark{off}},
+  toctitle/.code={\def\husttoctitle{#1}},
+  tocsubtitle/.code={%
+    \def\hust@tmp{#1}%
+    \ifdefstring{\hust@tmp}{Hidden}{\def\husttocsubtitle{}}{%
+      \ifdefstring{\hust@tmp}{hidden}{\def\husttocsubtitle{}}{%
+        \ifdefstring{\hust@tmp}{none}{\def\husttocsubtitle{}}{%
+          \def\husttocsubtitle{#1}%
+        }%
+      }%
+    }%
+  },
+  reftitle/.code={\def\hustreftitle{#1}},
+  refsubtitle/.code={%
+    \def\hust@tmp{#1}%
+    \ifdefstring{\hust@tmp}{Hidden}{\def\hustrefsubtitle{}}{%
+      \ifdefstring{\hust@tmp}{hidden}{\def\hustrefsubtitle{}}{%
+        \ifdefstring{\hust@tmp}{none}{\def\hustrefsubtitle{}}{%
+          \def\hustrefsubtitle{#1}%
+        }%
+      }%
+    }%
+  },
+  wordmark/none/.code={\def\hust@wordmark{off}},
+  panelsocial/.is choice,
+  panelsocial/on/.code={\def\hust@panelsocial{on}},
+  panelsocial/true/.code={\def\hust@panelsocial{on}},
+  panelsocial/off/.code={\def\hust@panelsocial{off}},
+  panelsocial/false/.code={\def\hust@panelsocial{off}},
+  logounit/.store in=\hust@logounit,
+  unit/.store in=\hust@logounit,
+  logovn/.store in=\hust@logovn,
+  logoen/.store in=\hust@logoen,
+  logomode/.is choice,
+  logomode/vector/.code={\def\hust@logomode{vector}},
+  logomode/image/.code={\def\hust@logomode{image}},
+  logolayout/.is choice,
+  logolayout/1/.code={\def\hust@logolayout{1}},
+  logolayout/2/.code={\def\hust@logolayout{2}},
+  logolayout/3/.code={\def\hust@logolayout{3}},
+  logolayout/1line/.code={\def\hust@logolayout{1}},
+  logolayout/2lines/.code={\def\hust@logolayout{2}},
+  logolayout/4a/.code={\def\hust@logolayout{4a}},
+  logolayout/4b/.code={\def\hust@logolayout{4b}},
+  logo2/.code={\def\hust@logotwoimage{#1}},
+  logo2image/.store in=\hust@logotwoimage,
+  logo2vn/.store in=\hust@logotwovn,
+  logo2en/.store in=\hust@logotwoen,
+  logo2color/.store in=\hust@logotwocolor,
+  logo2layout/.store in=\hust@logotwolayout,
+  logo2sep/.store in=\hust@logotwosep,
+  progressbar/.is choice,
+  progressbar/on/.code={%
+    \def\hust@progressbar{on}%
+    \def\hust@prog@h{0.058\paperheight}%
+  },
+  progressbar/true/.code={%
+    \def\hust@progressbar{on}%
+    \def\hust@prog@h{0.058\paperheight}%
+  },
+  progressbar/off/.code={%
+    \def\hust@progressbar{off}%
+    \def\hust@prog@h{0pt}%
+  },
+  progressbar/false/.code={%
+    \def\hust@progressbar{off}%
+    \def\hust@prog@h{0pt}%
+  },
+  footer/.store in=\hust@footertext,
+  footerleft/.store in=\hust@lefttext,
+  footermeta/.is choice,
+  footermeta/on/.code={\hust@footermetatrue},
+  footermeta/true/.code={\hust@footermetatrue},
+  footermeta/off/.code={\hust@footermetafalse},
+  footermeta/false/.code={\hust@footermetafalse},
+  footermeta/none/.code={\hust@footermetafalse},
+  footerinfo/.is choice,
+  footerinfo/on/.code={\hust@footermetatrue},
+  footerinfo/true/.code={\hust@footermetatrue},
+  footerinfo/off/.code={\hust@footermetafalse},
+  footerinfo/false/.code={\hust@footermetafalse},
+  footerinfo/none/.code={\hust@footermetafalse},
+  footerauthor/.code={\gdef\hust@footer@author{#1}},
+  footertitle/.code={\gdef\hust@footer@title{#1}},
+  footerdate/.code={\gdef\hust@footer@date{#1}},
+  citemaxlines/.store in=\hust@citemaxlines,
+  citetitlemax/.store in=\hust@citetitlemax,
+  citejournalmax/.store in=\hust@citejournalmax,
+  citeauthormax/.store in=\hust@citeauthormax,
+  footertitlemax/.store in=\hust@footertitlemax,
+  footerauthormax/.store in=\hust@footerauthormax,
+  citemax/.store in=\hust@citemax,
+  citecolumns/.is choice,
+  citecolumns/auto/.code={\def\hust@citecolumns{auto}},
+  citecolumns/1/.code={\def\hust@citecolumns{1}},
+  citecolumns/2/.code={\def\hust@citecolumns{2}},
+  dateaddress/.is choice,
+  dateaddress/on/.code={\hust@dateaddresstrue},
+  dateaddress/true/.code={\hust@dateaddresstrue},
+  dateaddress/off/.code={\hust@dateaddressfalse},
+  dateaddress/false/.code={\hust@dateaddressfalse},
+  dateaddress/none/.code={\hust@dateaddressfalse},
+  address/.code={%
+    \def\hust@tmp{#1}%
+    \ifdefstring{\hust@tmp}{none}{\hust@dateaddressfalse}{%
+      \ifdefstring{\hust@tmp}{off}{\hust@dateaddressfalse}{%
+        \ifdefstring{\hust@tmp}{false}{\hust@dateaddressfalse}{%
+          \hust@dateaddresstrue
+          \def\hust@date@address{#1}%
+        }%
+      }%
+    }%
+  },
+  location/.code={%
+    \def\hust@tmp{#1}%
+    \ifdefstring{\hust@tmp}{none}{\hust@dateaddressfalse}{%
+      \ifdefstring{\hust@tmp}{off}{\hust@dateaddressfalse}{%
+        \ifdefstring{\hust@tmp}{false}{\hust@dateaddressfalse}{%
+          \hust@dateaddresstrue
+          \def\hust@date@address{#1}%
+        }%
+      }%
+    }%
+  },
+  datecity/.code={%
+    \def\hust@tmp{#1}%
+    \ifdefstring{\hust@tmp}{none}{\hust@dateaddressfalse}{%
+      \ifdefstring{\hust@tmp}{off}{\hust@dateaddressfalse}{%
+        \ifdefstring{\hust@tmp}{false}{\hust@dateaddressfalse}{%
+          \hust@dateaddresstrue
+          \def\hust@date@address{#1}%
+        }%
+      }%
+    }%
+  },
+  headerright/.is choice,
+  headerright/off/.code={\def\hust@headerright{off}},
+  headerright/none/.code={\def\hust@headerright{off}},
+  headerright/false/.code={\def\hust@headerright{off}},
+  headerright/pagenumber/.code={\def\hust@headerright{pagenumber}},
+  headerright/number/.code={\def\hust@headerright{pagenumber}},
+  headerright/page/.code={\def\hust@headerright{pagenumber}},
+  headerright/logo/.code={%
+    \def\hust@headerright{logo}%
+    \ifx\hust@headerlogo\@empty
+      \ifx\hust@logotwoimage\@empty
+        \def\hust@headerlogo{hust-shield.png}%
+      \else
+        \let\hust@headerlogo\hust@logotwoimage
+      \fi
+    \fi
+  },
+  headernumber/.is choice,
+  headernumber/on/.code={\def\hust@headerright{pagenumber}},
+  headernumber/true/.code={\def\hust@headerright{pagenumber}},
+  headernumber/off/.code={\def\hust@headerright{off}},
+  headernumber/false/.code={\def\hust@headerright{off}},
+  headernumber/none/.code={\def\hust@headerright{off}},
+  pagenumberpos/.is choice,
+  pagenumberpos/footer/.code={\def\hust@headerright{off}},
+  pagenumberpos/bottom/.code={\def\hust@headerright{off}},
+  pagenumberpos/header/.code={\def\hust@headerright{pagenumber}},
+  pagenumberpos/frametitle/.code={\def\hust@headerright{pagenumber}},
+  pagenumberpos/top/.code={\def\hust@headerright{pagenumber}},
+  headerlogo/.code={%
+    \def\hust@tmp{#1}%
+    \ifdefstring{\hust@tmp}{off}{\def\hust@headerright{off}\def\hust@headerlogo{}}{%
+      \ifdefstring{\hust@tmp}{none}{\def\hust@headerright{off}\def\hust@headerlogo{}}{%
+        \ifdefstring{\hust@tmp}{false}{\def\hust@headerright{off}\def\hust@headerlogo{}}{%
+          \ifdefstring{\hust@tmp}{on}{%
+            \def\hust@headerright{logo}%
+            \ifx\hust@logotwoimage\@empty
+              \def\hust@headerlogo{hust-shield.png}%
+            \else
+              \let\hust@headerlogo\hust@logotwoimage
+            \fi
+          }{%
+            \ifdefstring{\hust@tmp}{true}{%
+              \def\hust@headerright{logo}%
+              \ifx\hust@logotwoimage\@empty
+                \def\hust@headerlogo{hust-shield.png}%
+              \else
+                \let\hust@headerlogo\hust@logotwoimage
+              \fi
+            }{%
+              \def\hust@headerright{logo}%
+              \def\hust@headerlogo{#1}%
+            }%
+          }%
+        }%
+      }%
+    }%
+  },
+  framebg/.is choice,
+  framebg/off/.code={\def\hust@framebg{off}},
+  framebg/false/.code={\def\hust@framebg{off}},
+  framebg/none/.code={\def\hust@framebg{off}},
+  framebg/on/.code={\def\hust@framebg{on}\def\hust@framebg@col{auto}},
+  framebg/true/.code={\def\hust@framebg{on}\def\hust@framebg@col{auto}},
+  framebg/auto/.code={\def\hust@framebg{on}\def\hust@framebg@col{auto}},
+  framebg/diag/.code={\def\hust@framebg{on}\def\hust@framebg@col{auto}},
+  framebg/blue/.code={\def\hust@framebg{on}\def\hust@framebg@col{blue}},
+  framebg/red/.code={\def\hust@framebg{on}\def\hust@framebg@col{red}},
+  diagbg/.is choice,
+  diagbg/off/.code={\def\hust@framebg{off}},
+  diagbg/false/.code={\def\hust@framebg{off}},
+  diagbg/none/.code={\def\hust@framebg{off}},
+  diagbg/on/.code={\def\hust@framebg{on}\def\hust@framebg@col{auto}},
+  diagbg/true/.code={\def\hust@framebg{on}\def\hust@framebg@col{auto}},
+  diagbg/auto/.code={\def\hust@framebg{on}\def\hust@framebg@col{auto}},
+  diagbg/diag/.code={\def\hust@framebg{on}\def\hust@framebg@col{auto}},
+  diagbg/blue/.code={\def\hust@framebg{on}\def\hust@framebg@col{blue}},
+  diagbg/red/.code={\def\hust@framebg{on}\def\hust@framebg@col{red}},
+  texture/.is choice,
+  texture/off/.code={\def\hust@framebg{off}},
+  texture/false/.code={\def\hust@framebg{off}},
+  texture/none/.code={\def\hust@framebg{off}},
+  texture/on/.code={\def\hust@framebg{on}\def\hust@framebg@col{auto}},
+  texture/true/.code={\def\hust@framebg{on}\def\hust@framebg@col{auto}},
+  texture/auto/.code={\def\hust@framebg{on}\def\hust@framebg@col{auto}},
+  texture/diag/.code={\def\hust@framebg{on}\def\hust@framebg@col{auto}},
+  texture/blue/.code={\def\hust@framebg{on}\def\hust@framebg@col{blue}},
+  texture/red/.code={\def\hust@framebg{on}\def\hust@framebg@col{red}},
+  framebgopacity/.store in=\hust@framebg@opacity,
+  diagbgopacity/.store in=\hust@framebg@opacity,
+  textureopacity/.store in=\hust@framebg@opacity,
+  framebgheight/.store in=\hust@framebg@height,
+  diagbgheight/.store in=\hust@framebg@height,
+  textureheight/.store in=\hust@framebg@height,
+  coverlightopacity/.store in=\hust@coverlight@opacity,
+}
+%% defaults = the look of the PPTX template & Brand Guidebook (Avant Garde titles, Lato body)
+\pgfkeys{/hust/.cd, color=blue, font=lato, titlefont=avantgarde, footerlogo=full,
+  bar=thin, titlepage=cover, coverbg=cover, sectionpage=none, numbering=plain, slogan=on,
+  wordmark=on, panelsocial=on, logomode=vector, logolayout=2,
+  logo2sep=none, logo2layout=1, progressbar=off, dateaddress=on, address={Hà Nội}}
+
+%% \hustsetup{...} may be used anywhere in the preamble after \usetheme{HUST}
+\newcommand*\hustsetup[1]{\pgfkeys{/hust/.cd,#1}}
+
+\def\hust@opt@on{on}
+\def\hust@opt@off{off}
+\def\hust@col@red{red}
+\def\hust@col@blue{blue}
+\def\hust@col@auto{auto}
+\def\hust@progressbar{off}
+\def\hust@prog@h{0pt}
+
+\newcommand{\hust@resolve@diagimg}{%
+  \ifx\hust@framebg@col\hust@col@auto
+    \edef\hust@diag@img{bg-diag-\hust@colname.png}%
+  \else
+    \edef\hust@diag@img{bg-diag-\hust@framebg@col.png}%
+  \fi
+}
+
+%% ------------------------------------------------------------ Vietnamese Date Format
+\newcommand{\hust@set@today}{%
+  \def\today{%
+    \ifhust@dateaddress
+      \ifx\hust@date@address\@empty
+        ngày \number\day\ tháng \number\month\ năm \number\year
+      \else
+        \hust@date@address, ngày \number\day\ tháng \number\month\ năm \number\year
+      \fi
+    \else
+      ngày \number\day\ tháng \number\month\ năm \number\year
+    \fi
+  }%
+}
+\hust@set@today
+\AtBeginDocument{\hust@set@today}
+
+%% Helper to output an arbitrary Vietnamese date with optional custom address:
+%%   \hustdate{8}{7}{2025} -> "Hà Nội, ngày 8 tháng 7 năm 2025" (when address is on)
+%%   \hustdate[TP. Hồ Chí Minh]{8}{7}{2025} -> "TP. Hồ Chí Minh, ngày 8 tháng 7 năm 2025"
+%%   \hustdate[none]{8}{7}{2025} -> "ngày 8 tháng 7 năm 2025"
+\newcommand{\hustdate}[4][]{%
+  \gdef\hust@recorded@shortdate{\ifnum#2<10 0\fi\number#2/\ifnum#3<10 0\fi\number#3/\number#4}%
+  \begingroup
+    \def\hust@tmp@addr{\hust@date@address}%
+    \ifstrempty{#1}{}{%
+      \ifstrequal{#1}{none}{\def\hust@tmp@addr{}}{%
+        \ifstrequal{#1}{off}{\def\hust@tmp@addr{}}{%
+          \ifstrequal{#1}{false}{\def\hust@tmp@addr{}}{%
+            \def\hust@tmp@addr{#1}%
+          }%
+        }%
+      }%
+    }%
+    \ifhust@dateaddress
+      \ifx\hust@tmp@addr\@empty
+        ngày #2 tháng #3 năm #4%
+      \else
+        \hust@tmp@addr, ngày #2 tháng #3 năm #4%
+      \fi
+    \else
+      \ifstrempty{#1}{%
+        ngày #2 tháng #3 năm #4%
+      }{%
+        \ifstrequal{#1}{none}{ngày #2 tháng #3 năm #4}{%
+          \ifstrequal{#1}{off}{ngày #2 tháng #3 năm #4}{%
+            #1, ngày #2 tháng #3 năm #4%
+          }%
+        }%
+      }%
+    \fi
+  \endgroup
+}
+\let\vntoday\today
+\let\vietnamesedate\today
+
+%% Short date format (DD/MM/YYYY):
+\newcommand{\hust@dateshort}{%
+  \ifx\hust@recorded@shortdate\@empty
+    \ifnum\day<10 0\fi\number\day/%
+    \ifnum\month<10 0\fi\number\month/%
+    \number\year
+  \else
+    \hust@recorded@shortdate
+  \fi
+}
+
+%% Helpers to resolve footer metadata fields:
+\newcommand{\hust@cur@footerauthor}{%
+  \ifnum\hust@footerauthormax>0\relax
+    \husttruncate{\hust@footerauthormax}{\ifdefempty{\hust@footer@author}{\insertshortauthor}{\hust@footer@author}}%
+  \else
+    \ifdefempty{\hust@footer@author}{\insertshortauthor}{\hust@footer@author}%
+  \fi
+}
+
+\newcommand{\hust@cur@footertitle}{%
+  \ifnum\hust@footertitlemax>0\relax
+    \husttruncate{\hust@footertitlemax}{\ifdefempty{\hust@footer@title}{\insertshorttitle}{\hust@footer@title}}%
+  \else
+    \ifdefempty{\hust@footer@title}{\insertshorttitle}{\hust@footer@title}%
+  \fi
+}
+
+\newcommand{\hust@cur@footerdate}{%
+  \ifdefempty{\hust@footer@date}{\hust@dateshort}{\hust@footer@date}%
+}
+
+%% ------------------------------------------------------------ vector logo lockup
+%% Follows "Sổ tay nhận diện thương hiệu ĐHBK Hà Nội":
+%%   - Hình 7: Cụm logo chính thức Việt - Anh (Bilingual)
+%%   - Hình 9: Logo kết hợp đơn vị thành viên (Member institution / school / institute)
+\IfFontExistsTF{TeX Gyre Adventor}{%
+  \newfontfamily\hust@logofont{TeX Gyre Adventor}[Ligatures=TeX]
+}{%
+  \IfFontExistsTF{AvantGarde}{%
+    \newfontfamily\hust@logofont{AvantGarde}[Ligatures=TeX]
+  }{%
+    \IfFontExistsTF{Arial}{%
+      \newfontfamily\hust@logofont{Arial}[Ligatures=TeX]
+    }{%
+      \let\hust@logofont\sffamily
+    }%
+  }%
+}
+
+\newdimen\hust@lh@dim
+\newdimen\hust@lgap@dim
+\newdimen\hust@rule@w
+\newsavebox\hust@box
+\newsavebox\hust@boxb
+\newsavebox\hust@logobox
+\newsavebox\hust@topbox
+\newsavebox\hust@botbox
+
+
+\def\hust@chknewline#1\newline#2\relax{%
+  \if\relax\detokenize{#2}\relax
+    \def\hust@unit@multiline{0}%
+  \else
+    \def\hust@unit@multiline{1}%
+  \fi
+}
+
+\def\hust@parse@two@vn#1\newline#2\newline#3\relax{%
+  \def\hust@vn@A{#1}%
+  \def\hust@vn@B{#2}%
+}
+\def\hust@parse@two@en#1\newline#2\newline#3\relax{%
+  \def\hust@en@A{#1}%
+  \def\hust@en@B{#2}%
+}
+\def\hust@render@unit#1\newline#2\relax{%
+  \hbox{\scalebox{0.86}[1]{{\normalfont\hust@logofont\fontsize{0.19\hust@lh@dim}{0.19\hust@lh@dim}\selectfont\bfseries\color{\hust@lucol}#1}}}%
+  \if\relax\detokenize{#2}\relax\else
+    \vskip 0.04\hust@lh@dim%
+    \hust@render@unit#2\relax%
+  \fi
+}
+\def\hust@render@vn@sub#1\newline#2\relax{%
+  \hbox{\scalebox{0.92}[1]{{\normalfont\hust@logofont\fontsize{0.165\hust@lh@dim}{0.165\hust@lh@dim}\selectfont\bfseries\color{\hust@lcol}#1}}}%
+  \if\relax\detokenize{#2}\relax\else
+    \vskip 0.03\hust@lh@dim%
+    \hust@render@vn@sub#2\relax%
+  \fi
+}
+\def\hust@render@unit@sub#1\newline#2\relax{%
+  \hbox{\scalebox{0.86}[1]{{\normalfont\hust@logofont\fontsize{0.18\hust@lh@dim}{0.18\hust@lh@dim}\selectfont\bfseries\color{\hust@lucol}#1}}}%
+  \if\relax\detokenize{#2}\relax\else
+    \vskip 0.03\hust@lh@dim%
+    \hust@render@unit@sub#2\relax%
+  \fi
+}
+
+\newcommand{\hustlogo}[1][]{%
+  \begingroup%
+  \def\hust@lh{1.0cm}%
+  \def\hust@lgap{0.333\hust@lh@dim}%
+  \def\hust@limg{hust-shield.png}%
+  \def\hust@lunit{}%
+  \def\hust@lvn{ĐẠI HỌC BÁCH KHOA HÀ NỘI}%
+  \def\hust@len{HANOI UNIVERSITY OF SCIENCE AND TECHNOLOGY}%
+  \def\hust@llayout{1}%
+  \def\hust@lcol{hustblack}%
+  \def\hust@lucol{hustcrimson}%
+  \def\hust@llcol{hustgrayline}%
+  \def\hust@lequalwidth{auto}%
+  \pgfkeys{/hust/logo/.cd,
+    height/.store in=\hust@lh,
+    gap/.store in=\hust@lgap,
+    image/.store in=\hust@limg,
+    unit/.store in=\hust@lunit,
+    vn/.store in=\hust@lvn,
+    en/.store in=\hust@len,
+    layout/.store in=\hust@llayout,
+    color/.store in=\hust@lcol,
+    unitcolor/.store in=\hust@lucol,
+    linecolor/.store in=\hust@llcol,
+    equalwidth/.store in=\hust@lequalwidth,
+    dark/.code={%
+      \def\hust@lcol{white}%
+      \def\hust@lucol{white}%
+      \def\hust@llcol{white!60}%
+    },
+    #1%
+  }%
+  \edef\hust@llayout{\hust@llayout}%
+  \edef\hust@limg{\hust@limg}%
+  \edef\hust@lcol{\hust@lcol}%
+  \edef\hust@lucol{\hust@lucol}%
+  \edef\hust@llcol{\hust@llcol}%
+  \edef\hust@lequalwidth{\hust@lequalwidth}%
+  \expandafter\def\expandafter\hust@lunit\expandafter{\hust@lunit}%
+  \expandafter\def\expandafter\hust@lvn\expandafter{\hust@lvn}%
+  \expandafter\def\expandafter\hust@len\expandafter{\hust@len}%
+  \hust@lh@dim=\hust@lh\relax
+  \hust@lgap@dim=\hust@lgap\relax
+  \if\relax\detokenize\expandafter{\hust@lunit}\relax
+    \sbox\hust@logobox{\scalebox{0.93}[1]{{\normalfont\hust@logofont\fontsize{0.255\hust@lh@dim}{0.255\hust@lh@dim}\selectfont\bfseries\color{\hust@lcol}\hust@lvn}}}%
+  \else
+    %% Pre-build Member Unit boxes outside tikzpicture so \nullfont does not suppress \sbox
+    \expandafter\hust@chknewline\hust@lunit\newline\relax
+    \def\hust@cmp@two{2}%
+    \def\hust@cmp@twolines{2lines}%
+    \def\hust@cmp@foura{4a}%
+    \def\hust@cmp@fourb{4b}%
+    \let\hust@is@foura\undefined
+    \ifx\hust@llayout\hust@cmp@foura\def\hust@is@foura{1}\fi
+    \ifnum\hust@unit@multiline=1
+      \ifx\hust@llayout\hust@cmp@two\def\hust@is@foura{1}\fi
+      \ifx\hust@llayout\hust@cmp@twolines\def\hust@is@foura{1}\fi
+    \fi
+    \ifdefined\hust@is@foura
+      %% Case 4a: 2 lines VN + separator rule at center + 2 lines Unit (Symmetric)
+      \def\hust@def@vn{ĐẠI HỌC BÁCH KHOA HÀ NỘI}%
+      \ifx\hust@lvn\hust@def@vn
+        \def\hust@lvn{ĐẠI HỌC\newline BÁCH KHOA HÀ NỘI}%
+      \fi
+      \sbox\hust@topbox{\vbox{\offinterlineskip\expandafter\hust@render@vn@sub\hust@lvn\newline\relax}}%
+      \sbox\hust@botbox{\vbox{\offinterlineskip\expandafter\hust@render@unit@sub\hust@lunit\newline\relax}}%
+      \hust@rule@w=\wd\hust@topbox\relax
+      \ifdim\wd\hust@botbox>\hust@rule@w \hust@rule@w=\wd\hust@botbox\relax\fi
+    \else
+      \ifx\hust@llayout\hust@cmp@fourb
+        \def\hust@do@fourb{1}%
+      \else
+        \ifnum\hust@unit@multiline=1
+          \def\hust@do@fourb{1}%
+        \else
+          \def\hust@do@fourb{0}%
+        \fi
+      \fi
+      \ifnum\hust@do@fourb=1
+        %% Case 4b: 1 line VN + separator rule + 2 lines Unit
+        \sbox\hust@topbox{\scalebox{0.92}[1]{{\normalfont\hust@logofont\fontsize{0.205\hust@lh@dim}{0.205\hust@lh@dim}\selectfont\bfseries\color{\hust@lcol}\hust@lvn}}}%
+        \sbox\hust@botbox{\vbox{\offinterlineskip\expandafter\hust@render@unit\hust@lunit\newline\relax}}%
+        \hust@rule@w=\wd\hust@topbox\relax
+        \ifdim\wd\hust@botbox>\hust@rule@w \hust@rule@w=\wd\hust@botbox\relax\fi
+      \else
+        %% Case 3: 1 line VN + separator rule + 1 line Unit (Measured from official Hình 9a lockup)
+        \sbox\hust@topbox{\scalebox{0.92}[1]{{\normalfont\hust@logofont\fontsize{0.215\hust@lh@dim}{0.215\hust@lh@dim}\selectfont\bfseries\color{\hust@lcol}\hust@lvn}}}%
+        \sbox\hust@botbox{\scalebox{0.85}[1]{{\normalfont\hust@logofont\fontsize{0.262\hust@lh@dim}{0.262\hust@lh@dim}\selectfont\bfseries\color{\hust@lucol}\hust@lunit}}}%
+        \hust@rule@w=\wd\hust@topbox\relax
+        \ifdim\wd\hust@botbox>\hust@rule@w \hust@rule@w=\wd\hust@botbox\relax\fi
+      \fi
+    \fi
+  \fi
+  \begin{tikzpicture}[baseline={(shield.south)}]
+    \node[inner sep=0pt, outer sep=0pt, anchor=south west] (shield) at (0, 0)
+      {\includegraphics[height=\hust@lh@dim]{\hust@limg}};
+    \if\relax\detokenize\expandafter{\hust@lunit}\relax
+      %% ================================= Case 1 & 2: Bilingual (Hình 7)
+      \def\hust@cmp@two{2}%
+      \def\hust@cmp@twolines{2lines}%
+      \let\hust@is@laytwo\undefined
+      \ifx\hust@llayout\hust@cmp@two\def\hust@is@laytwo{1}\fi
+      \ifx\hust@llayout\hust@cmp@twolines\def\hust@is@laytwo{1}\fi
+      \ifdefined\hust@is@laytwo
+        %% Horizontal 2: 2 lines VN, 2 lines EN (Hình 7b, matches logo-full.png)
+        \begingroup
+          \let\\\newline
+          \def\hust@def@vn{ĐẠI HỌC BÁCH KHOA HÀ NỘI}%
+          \ifx\hust@lvn\hust@def@vn
+            \def\hust@vn@A{ĐẠI HỌC}%
+            \def\hust@vn@B{BÁCH KHOA HÀ NỘI}%
+          \else
+            \expandafter\hust@parse@two@vn\hust@lvn\newline\newline\relax
+          \fi
+          \def\hust@def@en{HANOI UNIVERSITY OF SCIENCE AND TECHNOLOGY}%
+          \ifx\hust@len\hust@def@en
+            \def\hust@en@A{HANOI UNIVERSITY}%
+            \def\hust@en@B{OF SCIENCE AND TECHNOLOGY}%
+          \else
+            \expandafter\hust@parse@two@en\hust@len\newline\newline\relax
+          \fi
+          \node[anchor=base west, inner sep=0pt]
+            at ([xshift=\hust@lgap@dim, yshift=-0.2556\hust@lh@dim] shield.north east)
+            {\scalebox{0.92}[1]{{\normalfont\hust@logofont\fontsize{0.18\hust@lh@dim}{0.18\hust@lh@dim}\selectfont\bfseries\color{\hust@lcol}\hust@vn@A}}};
+          \node[anchor=base west, inner sep=0pt]
+            at ([xshift=\hust@lgap@dim, yshift=-0.5140\hust@lh@dim] shield.north east)
+            {\scalebox{0.92}[1]{{\normalfont\hust@logofont\fontsize{0.18\hust@lh@dim}{0.18\hust@lh@dim}\selectfont\bfseries\color{\hust@lcol}\hust@vn@B}}};
+          \node[anchor=base west, inner sep=0pt]
+            at ([xshift=\hust@lgap@dim, yshift=-0.7277\hust@lh@dim] shield.north east)
+            {{\normalfont\hust@logofont\fontsize{0.137\hust@lh@dim}{0.137\hust@lh@dim}\selectfont\mdseries\color{\hust@lcol}\hust@en@A}};
+          \node[anchor=base west, inner sep=0pt]
+            at ([xshift=\hust@lgap@dim, yshift=-0.9344\hust@lh@dim] shield.north east)
+            {{\normalfont\hust@logofont\fontsize{0.137\hust@lh@dim}{0.137\hust@lh@dim}\selectfont\mdseries\color{\hust@lcol}\hust@en@B}};
+        \endgroup
+      \else
+        %% Horizontal 1: 1 line VN, 1 line EN (Hình 7, matches footer-full.png)
+        \def\hust@eqw@auto{auto}%
+        \def\hust@eqw@true{true}%
+        \def\hust@def@img{hust-shield.png}%
+        \let\hust@do@eqw\undefined
+        \ifx\hust@lequalwidth\hust@eqw@true\def\hust@do@eqw{1}\fi
+        \ifx\hust@lequalwidth\hust@eqw@auto
+          \ifx\hust@limg\hust@def@img\def\hust@do@eqw{1}\fi
+        \fi
+        \node[inner sep=0pt, outer sep=0pt, anchor=west]
+          at ([xshift=\hust@lgap@dim] shield.east) {%
+            \vbox{%
+              \offinterlineskip%
+              \hbox{\usebox\hust@logobox}%
+              \vskip 0.08\hust@lh@dim%
+              \ifdefined\hust@do@eqw
+                \hbox{\resizebox{\wd\hust@logobox}{!}{{\normalfont\hust@logofont\fontsize{0.185\hust@lh@dim}{0.185\hust@lh@dim}\selectfont\mdseries\color{\hust@lcol}\hust@len}}}%
+              \else
+                \hbox{{\normalfont\hust@logofont\fontsize{0.155\hust@lh@dim}{0.155\hust@lh@dim}\selectfont\mdseries\color{\hust@lcol}\hust@len}}%
+              \fi
+            }%
+          };
+      \fi
+    \else
+      %% ================================= Case 3 & 4: Member Unit (Hình 9)
+      \ifdefined\hust@is@foura
+        %% Case 4a: 2 lines VN + separator rule at center + 2 lines Unit (Symmetric)
+        \node[inner sep=0pt, outer sep=0pt, anchor=south west, align=left] (top)
+          at ([xshift=\hust@lgap@dim, yshift=0.04\hust@lh@dim] shield.east) {\usebox\hust@topbox};
+        \draw[\hust@llcol, line width=0.7pt]
+          ([xshift=\hust@lgap@dim] shield.east) -- ([xshift=\dimexpr\hust@lgap@dim + \hust@rule@w\relax] shield.east);
+        \node[inner sep=0pt, outer sep=0pt, anchor=north west, align=left] (bot)
+          at ([xshift=\hust@lgap@dim, yshift=-0.04\hust@lh@dim] shield.east) {\usebox\hust@botbox};
+      \else
+        \ifnum\hust@do@fourb=1
+          %% Case 4b: 1 line VN + separator rule + 2 lines Unit (Cluster pushed up to center on shield)
+          \node[inner sep=0pt, outer sep=0pt, anchor=south west] (top)
+            at ([xshift=\hust@lgap@dim, yshift=0.16\hust@lh@dim] shield.east) {\usebox\hust@topbox};
+          \draw[\hust@llcol, line width=0.7pt]
+            ([xshift=\hust@lgap@dim, yshift=0.095\hust@lh@dim] shield.east) --
+            ([xshift=\dimexpr\hust@lgap@dim + \hust@rule@w\relax, yshift=0.095\hust@lh@dim] shield.east);
+          \node[inner sep=0pt, outer sep=0pt, anchor=north west, align=left] (bot)
+            at ([xshift=\hust@lgap@dim, yshift=0.035\hust@lh@dim] shield.east) {\usebox\hust@botbox};
+        \else
+          %% Case 3: 1 line VN + separator rule + 1 line Unit (Measured from official Hình 9a lockup)
+          \node[inner sep=0pt, outer sep=0pt, anchor=base west] (top)
+            at ([xshift=\hust@lgap@dim, yshift=0.167\hust@lh@dim] shield.east) {\usebox\hust@topbox};
+          \draw[\hust@llcol, line width=0.75pt]
+            ([xshift=\hust@lgap@dim, yshift=0.042\hust@lh@dim] shield.east) --
+            ([xshift=\dimexpr\hust@lgap@dim + \hust@rule@w\relax, yshift=0.042\hust@lh@dim] shield.east);
+          \node[inner sep=0pt, outer sep=0pt, anchor=base west] (bot)
+            at ([xshift=\hust@lgap@dim, yshift=-0.300\hust@lh@dim] shield.east) {\usebox\hust@botbox};
+        \fi
+      \fi
+    \fi
+  \end{tikzpicture}%
+  \endgroup
+}
+
+%% ------------------------------------------------------------ HUST Wordmark Lockup (Hình 14)
+%% Combines footer-hust.png (or footer-hust-white.png) with 2 lines:
+%%   Line 1: ĐẠI HỌC BÁCH KHOA HÀ NỘI (Bold)
+%%   Line 2: HANOI UNIVERSITY OF SCIENCE AND TECHNOLOGY (Regular)
+%% Per guidebook Hình 14:
+%% - Width of both lines matches the exact width of the HUST logo
+%% - Height of both lines combined <= logo height x
+%% - Gap between logo and Line 1 is ~ 1/3x
+\newdimen\hust@wm@h@dim
+\newsavebox\hust@wm@imgbox
+\newsavebox\hust@wm@vnbox
+\newsavebox\hust@wm@enbox
+
+\newcommand{\hustwordmarklockup}[1][]{%
+  \begingroup
+  \def\hust@wm@col{white}%
+  \def\hust@wm@h{0.11\paperheight}%
+  \def\hust@wm@img{footer-hust-white.png}%
+  \pgfkeys{/hust/wordmarklockup/.cd,
+    color/.store in=\hust@wm@col,
+    height/.store in=\hust@wm@h,
+    image/.store in=\hust@wm@img,
+    #1%
+  }%
+  \hust@wm@h@dim=\hust@wm@h\relax
+  \sbox\hust@wm@imgbox{\includegraphics[height=\hust@wm@h@dim]{\hust@wm@img}}%
+  \sbox\hust@wm@vnbox{{\hust@logofont\fontsize{0.25\hust@wm@h@dim}{0.25\hust@wm@h@dim}\selectfont\bfseries\color{\hust@wm@col}ĐẠI HỌC BÁCH KHOA HÀ NỘI}}%
+  \sbox\hust@wm@enbox{{\hust@logofont\fontsize{0.14\hust@wm@h@dim}{0.14\hust@wm@h@dim}\selectfont\mdseries\color{\hust@wm@col}HANOI UNIVERSITY OF SCIENCE AND TECHNOLOGY}}%
+  \vbox{%
+    \offinterlineskip%
+    \hbox{\usebox\hust@wm@imgbox}%
+    \vskip 0.33333\hust@wm@h@dim%
+    \hbox{\resizebox{\wd\hust@wm@imgbox}{!}{\usebox\hust@wm@vnbox}}%
+    \vskip 0.08\hust@wm@h@dim%
+    \hbox{\resizebox{\wd\hust@wm@imgbox}{!}{\usebox\hust@wm@enbox}}%
+  }%
+  \endgroup
+}
+
+\endinput

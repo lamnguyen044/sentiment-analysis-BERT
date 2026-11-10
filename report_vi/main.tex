@@ -1,0 +1,126 @@
+\documentclass[a4paper,11pt]{report}
+
+% ---- Bố cục trang ----
+\usepackage[margin=2.5cm]{geometry}
+
+% ---- Phông chữ (XeLaTeX) ----
+\usepackage{fontspec}
+
+% ---- Chữ và liên kết ----
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks = true,
+    linkcolor  = blue!50!black,
+    citecolor  = blue!50!black,
+    urlcolor   = blue!50!black
+}
+
+% ---- Toán ----
+\usepackage{amsmath,amssymb,mathtools}
+
+% ---- Hình, bảng, mã nguồn ----
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
+\usepackage{listings}
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    language=Python,
+    keywordstyle=\color{blue!60!black},
+    commentstyle=\color{gray},
+    columns=fullflexible
+}
+
+% ---- Tên tiếng Việt cho các thành phần tự sinh ----
+\renewcommand{\contentsname}{Mục lục}
+\renewcommand{\chaptername}{Chương}
+\renewcommand{\bibname}{Tài liệu tham khảo}
+
+% ---- Đầu trang / chân trang ----
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\rfoot{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace*{3cm}
+
+    {\LARGE\bfseries Phân tích cảm xúc đánh giá sản phẩm Amazon Fine Food}\\[0.4cm]
+    {\Large Bộ phân loại cảm xúc ba lớp bằng học sâu}\\[2cm]
+
+    \rule{0.8\linewidth}{0.6pt}\\[0.5cm]
+    {\large Báo cáo bài tập lớn môn Nhập môn Học sâu}\\[0.2cm]
+    \rule{0.8\linewidth}{0.6pt}
+
+    \vfill
+
+    \begin{tabular}{ll}
+        \textbf{Giảng viên:} & TS. Trần Việt Trung \\
+    \end{tabular}
+
+    \vspace{0.8cm}
+
+    \textbf{Học viên}\\[0.3cm]
+    \begin{tabular}{ll}
+        Nguyễn Tuệ Lâm & 20261207M \\
+    \end{tabular}
+
+    \vspace{1cm}
+    {\large Ngày \the\day{} tháng \the\month{} năm \the\year}
+
+    \vspace*{1cm}
+\end{titlepage}
+
+\tableofcontents
+
+\chapter{Giới thiệu}
+\label{ch:introduction}
+\input{content/introduction}
+
+\chapter{Phát biểu bài toán và hướng tiếp cận}
+\label{ch:problem-approach}
+\input{content/problem_approach}
+
+\chapter{Bộ dữ liệu và đặc tả dữ liệu}
+\label{ch:dataset}
+\input{content/dataset}
+
+\chapter{Tìm hiểu dữ liệu}
+\label{ch:data-understanding}
+\input{content/data_understanding}
+
+\chapter{Chuẩn bị dữ liệu}
+\label{ch:data-preparation}
+\input{content/data_preparation}
+
+\chapter{Xây dựng mô hình}
+\label{ch:modeling}
+\input{content/modeling}
+
+\chapter{Đánh giá}
+\label{ch:evaluation}
+\input{content/evaluation}
+
+\chapter{Kết luận}
+\label{ch:conclusion}
+\input{content/conclusion}
+
+\begin{thebibliography}{9}
+\bibitem{mcauley2013} J.~McAuley and J.~Leskovec. From amateurs to connoisseurs: modeling the evolution of user expertise through online reviews. In \emph{Proceedings of the 22nd International Conference on World Wide Web (WWW)}, 2013.
+\bibitem{kaggle_fine_food} Stanford Network Analysis Project. Amazon Fine Food Reviews (bộ dữ liệu Kaggle \texttt{snap/amazon-fine-food-reviews}). \url{https://www.kaggle.com/datasets/snap/amazon-fine-food-reviews}.
+\end{thebibliography}
+
+\end{document}

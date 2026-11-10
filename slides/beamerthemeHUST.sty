@@ -1,0 +1,220 @@
+%% beamerthemeHUST.sty -- Hanoi University of Science and Technology (HUST / ĐHBK Hà Nội)
+%%
+%%   \usetheme[color=blue,font=lato,footerlogo=full]{HUST}
+%%
+%% Theme options (all optional, see README.md):
+%%   color        = blue | red
+%%   font         = lato | arial | times
+%%   titlefont    = same | avantgarde       (brand "main typeface" for titles)
+%%   footerlogo   = full | mark | wordmark | hust | none
+%%   bar          = thin | thick            (accent rule under the header band)
+%%   titlepage    = cover | dark
+%%   sectionpage  = none | panel
+%%   numbering    = none | plain | fraction
+%%   footer       = <text centred in the footer>
+%%   footerleft   = <text at the left of the footer>
+%%
+%% Aspect ratio and base font size are *class* options of beamer and are picked
+%% up automatically:  \documentclass[aspectratio=169,10pt]{beamer}
+\ProvidesPackage{beamerthemeHUST}[2026/10/26 HUST Beamer theme]
+\RequirePackage{hust-core}
+\ProcessPgfPackageOptions{/hust}   % reads \usetheme[...]{HUST}
+\useinnertheme{HUST}
+\useoutertheme{HUST}
+\usecolortheme{HUST}
+\usefonttheme{HUST}
+
+%% ------------------------------------------------------------- BibLaTeX & Citations
+%% Automatically configure citations to display in the footer slot matching Image 3:
+%% thin footnoterule + author + "title" + In: Journal volume (year)
+%% Auto-adjusts left indent to avoid overlapping active footerlogo (mark, hust, full)
+%% Bounded right width to avoid overlapping slide numbering
+\newcommand{\hustfootcite}[2][]{%
+  \edef\hust@cur@slidenum{\insertframenumber}%
+  \@ifundefined{hust@cited@\hust@cur@slidenum @#2}{%
+    \ifstrempty{#1}{\hust@footcite@internal{#2}}{\hust@footcite@internal[#1]{#2}}%
+    \expandafter\xdef\csname hust@cited@\hust@cur@slidenum @#2\endcsname{\thefootnote}%
+  }{%
+    {\usebeamercolor[fg]{footnote mark}\usebeamerfont*{footnote mark}\textsuperscript{\csname hust@cited@\hust@cur@slidenum @#2\endcsname}}%
+  }%
+}
+
+\newcounter{hustbibidx}
+\def\hust@bib@from{1}
+\def\hust@bib@to{0}
+\def\hust@tmp@tlim{40}
+\def\hust@tmp@jlim{30}
+
+\newcommand{\hust@format@bibbox}[5]{%
+  \def\hust@tmp@tlim{#2}%
+  \def\hust@tmp@jlim{#3}%
+  \sbox\hust@tmp@cbox{%
+    \usebeamerfont{footnote}\selectfont\strut%
+    {\usebeamercolor[fg]{footnote mark}\usebeamerfont*{footnote mark}\textsuperscript{#1}}\,%
+    {\usebeamercolor[fg]{footnote}%
+     \ifnum#4=1\relax
+       \printnames[hustshortauthor][1-1]{labelname}%
+     \else
+       \printnames[given-family][1-1]{labelname}%
+     \fi
+     \setunit{\addperiod\space}%
+     \printfield[husttruncquote]{title}%
+     \ifnum#5=1\relax
+       \setunit{\addperiod\space}%
+       \iffieldundef{journaltitle}{%
+         \iffieldundef{booktitle}{}{%
+           \printfield[husttruncemph]{booktitle}%
+         }%
+       }{%
+         \printfield[husttruncemph]{journaltitle}%
+       }%
+       \setunit{\space}%
+       \printfield{volume}%
+       \setunit{\space}%
+       \printtext[parens]{\printdate}%
+       \addperiod
+     \else
+       \setunit{\space}%
+       \printtext[parens]{\printdate}%
+       \addperiod
+     \fi
+    }\strut%
+  }%
+}
+
+\newcommand{\hust@record@bibcite}[1]{%
+  \global\advance\c@hust@slide@citecount by 1\relax%
+  \hust@update@footcite@left%
+  \ifnum\c@hust@slide@citecount<9\relax
+    \edef\hust@cur@slot{\romannumeral\c@hust@slide@citecount}%
+    %% 1. Build 1-column single-line box (auto-cascades to fit \hust@cite@onecol@w unless set to -1)
+    \edef\hust@init@tlim{\ifnum\hust@citetitlemax=-1 -1\else\ifnum\hust@citetitlemax>0 \hust@citetitlemax\else\ifhust@wide 48\else 36\fi\fi\fi}%
+    \edef\hust@init@jlim{\ifnum\hust@citejournalmax=-1 -1\else\ifnum\hust@citejournalmax>0 \hust@citejournalmax\else\ifhust@wide 38\else 28\fi\fi\fi}%
+    \hust@format@bibbox{#1}{\hust@init@tlim}{\hust@init@jlim}{0}{1}%
+    \ifnum\hust@citetitlemax=-1\relax
+      \ifdim\wd\hust@tmp@cbox>\hust@cite@onecol@w
+        \sbox\hust@tmp@cbox{\resizebox{\hust@cite@onecol@w}{\height}{\usebox\hust@tmp@cbox}}%
+      \fi
+    \else
+      \ifdim\wd\hust@tmp@cbox>\hust@cite@onecol@w \hust@format@bibbox{#1}{36}{26}{1}{1}\fi
+      \ifdim\wd\hust@tmp@cbox>\hust@cite@onecol@w \hust@format@bibbox{#1}{28}{20}{1}{1}\fi
+      \ifdim\wd\hust@tmp@cbox>\hust@cite@onecol@w \hust@format@bibbox{#1}{20}{15}{1}{1}\fi
+      \ifdim\wd\hust@tmp@cbox>\hust@cite@onecol@w \hust@format@bibbox{#1}{18}{0}{1}{0}\fi
+      \ifdim\wd\hust@tmp@cbox>\hust@cite@onecol@w
+        \sbox\hust@tmp@cbox{\resizebox{\hust@cite@onecol@w}{\height}{\usebox\hust@tmp@cbox}}%
+      \fi
+    \fi
+    \global\setbox\csname hust@citebox@one@\hust@cur@slot\endcsname=\hbox{\unhbox\hust@tmp@cbox}%
+    %% 2. Build 2-column compact box (auto-cascades to fit \hust@cite@twocol@w unless set to -1)
+    \edef\hust@init@twotlim{\ifnum\hust@citetitlemax=-1 -1\else\ifhust@wide 30\else 22\fi\fi}%
+    \hust@format@bibbox{#1}{\hust@init@twotlim}{0}{1}{0}%
+    \ifnum\hust@citetitlemax=-1\relax
+      \ifdim\wd\hust@tmp@cbox>\hust@cite@twocol@w
+        \sbox\hust@tmp@cbox{\resizebox{\hust@cite@twocol@w}{\height}{\usebox\hust@tmp@cbox}}%
+      \fi
+    \else
+      \ifdim\wd\hust@tmp@cbox>\hust@cite@twocol@w \hust@format@bibbox{#1}{22}{0}{1}{0}\fi
+      \ifdim\wd\hust@tmp@cbox>\hust@cite@twocol@w \hust@format@bibbox{#1}{16}{0}{1}{0}\fi
+      \ifdim\wd\hust@tmp@cbox>\hust@cite@twocol@w \hust@format@bibbox{#1}{11}{0}{1}{0}\fi
+      \ifdim\wd\hust@tmp@cbox>\hust@cite@twocol@w
+        \sbox\hust@tmp@cbox{\resizebox{\hust@cite@twocol@w}{\height}{\usebox\hust@tmp@cbox}}%
+      \fi
+    \fi
+    \global\setbox\csname hust@citebox@two@\hust@cur@slot\endcsname=\hbox{\unhbox\hust@tmp@cbox}%
+  \fi
+}
+
+\newcommand{\hust@setup@biblatex}{%
+  \renewbibmacro*{in:}{}%
+  \DeclareNameFormat{hustshortauthor}{%
+    \usebibmacro{name:given-family}
+      {\namepartfamily}
+      {\namepartgiveni}
+      {\namepartprefix}
+      {\namepartsuffix}%
+    \usebibmacro{name:andothers}%
+  }%
+  \DeclareFieldFormat[article,inbook,incollection,inproceedings,patent,thesis,unpublished,book,misc,techreport]{husttruncquote}{%
+    \mkbibquote{\husttruncate{\hust@tmp@tlim}{##1}}%
+  }%
+  \DeclareFieldFormat[article,inbook,incollection,inproceedings,patent,thesis,unpublished,book,misc,techreport]{husttruncemph}{%
+    \mkbibemph{\husttruncate{\hust@tmp@jlim}{##1}}%
+  }%
+  \DeclareCiteCommand{\hust@footcite@internal}
+    {\usebibmacro{prenote}}
+    {\usebibmacro{citeindex}%
+     \stepcounter{footnote}%
+     {\usebeamercolor[fg]{footnote mark}\usebeamerfont*{footnote mark}\textsuperscript{\thefootnote}}%
+     \hust@record@bibcite{\thefootnote}}
+    {\multicitedelim}
+    {\usebibmacro{postnote}}%
+  \let\footcite\hustfootcite
+  \let\cite\hustfootcite
+  \defbibcheck{hustrange}{%
+    \stepcounter{hustbibidx}%
+    \ifnum\value{hustbibidx}<\hust@bib@from\relax
+      \skipentry
+    \else
+      \ifnum\hust@bib@to>0\relax
+        \ifnum\value{hustbibidx}>\hust@bib@to\relax
+          \skipentry
+        \fi
+      \fi
+    \fi
+  }%
+  \setbeamertemplate{bibliography item}[text]%
+  \setbeamercolor{bibliography item}{fg=hustmain}%
+  \setbeamercolor{bibliography entry author}{fg=hustblack}%
+  \setbeamercolor{bibliography entry title}{fg=hustblack}%
+  \setbeamercolor{bibliography entry location}{fg=hustblack}%
+  \setbeamercolor{bibliography entry note}{fg=hustblack}%
+}
+
+\AddToHook{package/biblatex/after}{\hust@setup@biblatex}
+\@ifpackageloaded{biblatex}{\hust@setup@biblatex}{}
+
+%% Convenient environment and command for references at the end of the presentation
+%% Supports manual page breaks across 2, 3, 4... slides via [from=..., to=...]
+%% Keeps exact identical title without incremental numbers (no Roman numerals I, II...)
+\define@key{hustbib}{from}{\def\hust@bib@from{#1}}
+\define@key{hustbib}{to}{\def\hust@bib@to{#1}}
+\define@key{hustbib}{title}{\def\hust@bib@title{#1}}
+\define@key{hustbib}{subtitle}{\def\hust@bib@subtitle{#1}}
+
+\newcommand{\hust@set@bibkeys}[1]{%
+  \in@{=}{#1}%
+  \ifin@
+    \setkeys{hustbib}{#1}%
+  \else
+    \ifstrempty{#1}{}{\def\hust@bib@title{#1}}%
+  \fi
+}
+
+\newenvironment{hustreferencesframe}[1][]{%
+  \def\hust@bib@from{1}%
+  \def\hust@bib@to{0}%
+  \let\hust@bib@title\hustreftitle
+  \let\hust@bib@subtitle\hustrefsubtitle
+  \hust@set@bibkeys{#1}%
+  \edef\hust@check@bibsub{\hust@bib@subtitle}%
+  \ifdefstring{\hust@check@bibsub}{Hidden}{\def\hust@check@bibsub{}}{}%
+  \ifdefstring{\hust@check@bibsub}{hidden}{\def\hust@check@bibsub{}}{}%
+  \ifdefstring{\hust@check@bibsub}{none}{\def\hust@check@bibsub{}}{}%
+  \global\hust@framenoprogressbartrue%
+  \begin{frame}[environment=hustreferencesframe,noprogressbar]%
+    \frametitle{\hust@bib@title}%
+    \ifx\hust@check@bibsub\@empty\else
+      \framesubtitle{\hust@check@bibsub}%
+    \fi
+    \setcounter{hustbibidx}{0}%
+    \printbibliography[check=hustrange,heading=none]%
+}{%
+  \end{frame}%
+}
+
+\newcommand{\hustprintreferences}[1][]{%
+  \begin{hustreferencesframe}[#1]%
+  \end{hustreferencesframe}%
+}
+
+\endinput

@@ -1,0 +1,125 @@
+\section{Mục tiêu}
+\label{sec:4-1}
+
+Tìm hiểu dữ liệu và Chuẩn bị dữ liệu (Chương~\ref{ch:data-preparation}) là một mạch liền: hiểu dữ liệu, rút ra các phát hiện về review, rồi biến chúng thành quyết định xây dựng bộ dữ liệu cho mô hình, gồm độ đo, đầu vào, cách chia và hàm mất mát. Câu hỏi nghiệp vụ của chương này là những tính chất nào của dữ liệu phải định hình mô hình và cách đánh giá.
+
+Chương này gồm nửa đầu của mạch đó: tổng quan dữ liệu (Mục~\ref{sec:4-2}), phân bố lớp (Mục~\ref{sec:4-3}), độ dài văn bản (Mục~\ref{sec:4-4}), thay đổi theo thời gian (Mục~\ref{sec:4-5}), người dùng, sản phẩm và độ hữu ích (Mục~\ref{sec:4-6}), nhiễu trong văn bản (Mục~\ref{sec:4-7}) và từ vựng của từng lớp (Mục~\ref{sec:4-8}). Chương kết thúc bằng các quyết định thiết kế (Mục~\ref{sec:4-9}) mà Chương~\ref{ch:data-preparation} thực hiện. Trừ khi nói khác, mọi con số đo trên bảng đã làm sạch gồm 393.577 review ở Mục~\ref{sec:5-2}.
+
+\section{Tổng quan bộ dữ liệu}
+\label{sec:4-2}
+
+\begin{center}
+\begin{tabular}{@{}p{6cm}p{7.5cm}@{}}
+    \toprule
+    Chỉ số & Giá trị \\
+    \midrule
+    Số dòng trong file thô & 568.454 \\
+    Số dòng sau làm sạch & 393.577 (69,2\% của file thô) \\
+    Số người dùng khác nhau (đã làm sạch) & 256.044 \\
+    Số sản phẩm khác nhau (đã làm sạch) & 67.554 \\
+    Khoảng thời gian & tháng 10/1999 -- tháng 10/2012 \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\section{Phân bố lớp}
+\label{sec:4-3}
+
+Dữ liệu lệch mạnh về phía tích cực. Review positive chiếm khoảng 78\%, negative 14,5\% và neutral 7,6\%, nên positive nhiều hơn neutral khoảng 10,3 lần. Một bộ phân loại luôn trả lời \emph{positive} đạt khoảng 78\% accuracy nhưng chỉ 0,29 Macro-F1, vì F1 của hai lớp còn lại bằng 0.
+
+Đây là lý do Macro-F1 là độ đo chính (Mục~\ref{sec:2-4}), và vì sao cách chia là phân tầng và hàm mất mát có trọng số (Chương~\ref{ch:data-preparation}).
+
+\section{Độ dài văn bản}
+\label{sec:4-4}
+
+Độ dài review lệch phải mạnh: nội dung trung vị có 57 từ nhưng review dài nhất có 3.432 từ.
+
+\begin{center}
+\small
+\begin{tabular}{@{}lrrrrrrrr@{}}
+    \toprule
+     & Trung bình & Độ lệch chuẩn & Min & Trung vị & P90 & P95 & P99 & Max \\
+    \midrule
+    \texttt{Text} (từ) & 79,8 & 77,2 & 3 & 57 & 159 & 215 & 377 & 3.432 \\
+    \texttt{Summary} (từ) & 4,1 & 2,6 & 0 & 3 & 8 & 9 & 12 & 42 \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+Tiêu đề ngắn (trung vị 3 từ) nhưng cô đọng, ví dụ ``Great taffy'' hay ``Not as Advertised'', nên tiêu đề được đặt trước nội dung để tạo đầu vào cho mô hình. Review 2 và 3 sao thường dài hơn review 5 sao, vì người viết giải thích cả điểm mạnh lẫn điểm yếu.
+
+Giới hạn tối đa 200 từ bao phủ khoảng 93\% review mà không phải cắt, nên được dùng làm giới hạn chuỗi cho BiLSTM. Với Transformer, giới hạn là 256 sub-word token; tỉ lệ review bị cắt (khoảng 6,2\%) được đo ở Mục~\ref{sec:6-5}. Khi một review bị cắt, phần cuối bị mất còn phần đầu, nơi có tiêu đề, được giữ. Vì độ dài chênh lệch lớn, các batch dùng padding động và gom theo độ dài, để review ngắn không bị đệm tới độ dài của một review 3.000 từ.
+
+\section{Thay đổi theo thời gian}
+\label{sec:4-5}
+
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[
+  ybar, ymode=log, ymin=1, ymax=300000,
+  width=0.92\textwidth, height=6cm,
+  bar width=7pt,
+  xlabel={Năm}, ylabel={Số review (thang log)},
+  symbolic x coords={1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012},
+  xtick=data, x tick label style={rotate=45,anchor=east,font=\small},
+  point meta=explicit,
+  nodes near coords={\pgfmathprintnumber[fixed,precision=0,1000 sep={.}]{\pgfplotspointmeta}},
+  nodes near coords style={font=\tiny,rotate=90,anchor=west},
+  enlarge x limits=0.05
+]
+\addplot coordinates {(1999,4) [4] (2000,17) [17] (2001,8) [8] (2002,33) [33] (2003,99) [99] (2004,439) [439] (2005,1059) [1059] (2006,4722) [4722] (2007,15752) [15752] (2008,23098) [23098] (2009,37866) [37866] (2010,57967) [57967] (2011,113428) [113428] (2012,139085) [139085]};
+\end{axis}
+\end{tikzpicture}
+\end{center}
+
+Số review đã làm sạch tăng gần theo cấp số nhân từ 2006, và hai năm 2011--2012 gộp lại có 252.513 review (64,2\%); năm 2012 kết thúc ở tháng 10. Điểm sao trung bình giảm dần từ 4,386 năm 2007 xuống 4,112 năm 2012, và tỉ lệ negative tăng từ 10,0\% lên 16,1\%. Phân bố nhãn vì vậy không ổn định theo thời gian.
+
+Cách chia ở Mục~\ref{sec:5-5} là ngẫu nhiên, nên review train và test cùng một giai đoạn. Điều này không đo được mô hình sẽ làm tốt đến đâu trên review trong tương lai, và được nêu như một hạn chế.
+
+\section{Người dùng, sản phẩm và độ hữu ích}
+\label{sec:4-6}
+
+Có 256.044 người dùng và 67.554 sản phẩm khác nhau. Trong số người dùng, 80,3\% chỉ viết một review, và 78,7\% sản phẩm có từ năm review trở xuống. Cả hai phân bố đều có đuôi dài, nên mô hình không thể dựa vào thói quen chấm điểm của người dùng mà phải học từ văn bản.
+
+Trong các review có ít nhất năm lượt bình chọn, review negative nhận nhiều lượt bình chọn hơn nhưng tỉ lệ hữu ích thấp hơn, vì người đọc thường không đồng ý với lời phàn nàn. Vì thông tin này không có sẵn khi review được đăng, nó không được dùng làm đặc trưng (Mục~\ref{sec:3-5}).
+
+\section{Nhiễu trong văn bản}
+\label{sec:4-7}
+
+\begin{center}
+\begin{tabular}{@{}p{8cm}p{3cm}@{}}
+    \toprule
+    Nhiễu trong \texttt{Text} & Tỉ lệ review \\
+    \midrule
+    Thẻ HTML (chủ yếu \texttt{<br />}) & 26,14\% \\
+    URL (\texttt{http}, \texttt{www}) & 2,08\% \\
+    Ký tự HTML mã hoá (\texttt{\&amp;}, \texttt{\&quot;}) & 0,33\% \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+Vì vậy văn bản chỉ được làm sạch nhẹ (Mục~\ref{sec:5-3}). Từ dừng và dấu câu được \emph{giữ lại}, vì các từ phủ định như \emph{not}, \emph{no}, \emph{never} nằm trong danh sách từ dừng chuẩn nhưng lại quyết định cảm xúc, và vì các mô hình nơ-ron có thể học vai trò của từng từ từ ngữ cảnh.
+
+\section{Từ vựng của từng lớp}
+\label{sec:4-8}
+
+Đếm từ và cặp từ trên một mẫu cân bằng lớp gồm 20.000 review mỗi lớp (bỏ từ dừng trừ từ phủ định) cho thấy các từ đơn như \emph{like}, \emph{taste}, \emph{good} và \emph{coffee} xuất hiện ở cả ba lớp; \emph{good} xuất hiện nhiều ngay cả trong review negative (``not good'', ``good but\ldots''). Các cặp từ phân biệt lớp tốt hơn: \emph{highly recommend}, \emph{great product} và \emph{love this} trong review positive; \emph{waste money}, \emph{would not} và \emph{not buy} trong review negative. Lớp neutral không có từ vựng riêng mà trộn từ vựng của hai lớp kia, nên được dự đoán là lớp khó nhất.
+
+\section{Quyết định thiết kế cho bước chuẩn bị dữ liệu}
+\label{sec:4-9}
+
+\begin{center}
+\begin{tabular}{@{}p{6.2cm}p{7.9cm}@{}}
+    \toprule
+    Phát hiện & Quyết định \\
+    \midrule
+    Khoảng 31\% dòng thô là review lặp & Loại chúng trước khi chia \\
+    Nhãn lệch 77,9 / 14,5 / 7,6\% & Chia phân tầng; trọng số lớp trong loss; Macro-F1 là độ đo chính \\
+    Độ dài lệch phải; 200 từ $\approx$ 93\% & Giới hạn 200 từ (BiLSTM) và 256 token (Transformer); padding động và gom theo độ dài \\
+    Tiêu đề ngắn nhưng nhiều thông tin & Đầu vào là tiêu đề rồi đến nội dung \\
+    26\% nội dung có HTML & Làm sạch nhẹ; giữ dấu câu và từ phủ định \\
+    Ngữ cảnh và phủ định quan trọng & Dùng mô hình chuỗi (BiLSTM với attention) và Transformer \\
+    Phân bố nhãn trôi theo thời gian & Nêu như một hạn chế; cách chia là ngẫu nhiên \\
+    \bottomrule
+\end{tabular}
+\end{center}

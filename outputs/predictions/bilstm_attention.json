@@ -1,0 +1,6 @@
+{
+  "name": "BiLSTM + Attention",
+  "train_time_s": 202.74942350387573,
+  "infer_time_s": 3.0342888832092285,
+  "n_params": 6250500
+}

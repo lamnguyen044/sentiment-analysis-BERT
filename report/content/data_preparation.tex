@@ -1,0 +1,150 @@
+\section{Objective}
+\label{sec:5-1}
+
+Turn the raw reviews into a leakage-safe modelling dataset: clean the raw rows (Section~\ref{sec:5-2}), build the input text (Section~\ref{sec:5-3}) and the label (Section~\ref{sec:5-4}), split the reviews into three parts (Section~\ref{sec:5-5}) and compute class weights (Section~\ref{sec:5-7}). The chapter implements the design decisions of Section~\ref{sec:4-9} with one frozen configuration:
+
+\begin{center}
+\begin{tabular}{@{}p{5.2cm}p{3cm}p{5.8cm}@{}}
+    \toprule
+    Parameter & Value & Origin \\
+    \midrule
+    Split ratio train / val / test & 80 / 10 / 10\% & Large test part; validation for early stopping \\
+    Stratification & By label & Neutral is only 7.6\% (Section~\ref{sec:4-3}) \\
+    Random seed & 42 & Reproducible split \\
+    Sequence limit & 200 words / 256 tokens & Length coverage (Section~\ref{sec:4-4}) \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\section{Data Cleaning}
+\label{sec:5-2}
+
+Each data-quality issue is first measured on the full raw file of 568{,}454 rows (rows may overlap across rules):
+
+\begin{center}
+\begin{tabular}{@{}p{7cm}p{3cm}p{3cm}@{}}
+    \toprule
+    Issue & Rows & Share of rows \\
+    \midrule
+    Repeated review (same user, name, time, text) & 174{,}521 & 30.70\% \\
+    Repeated \texttt{Text} & 174{,}875 & 30.76\% \\
+    Missing \texttt{Summary} & 27 & 0.005\% \\
+    Missing \texttt{ProfileName} & 26 & 0.005\% \\
+    Numerator $>$ denominator (helpfulness) & 2 & $<$0.001\% \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+No row is duplicated in \emph{all} columns, so the repetition is hidden in the product code. For example, user \texttt{A395BORC6FGVXV} posted one 2-star review titled ``Cough Medicine'' at time 1307923200, and it appears three times under three different product codes (\texttt{B000UA0QIQ}, \texttt{B002Y7526Y}, \texttt{B000U9WZ54}). Left in, such copies would put one on each side of a random split.
+
+The cleaning is performed in this order, always keeping the first occurrence:
+\begin{enumerate}
+    \item Drop rows that repeat the key (\texttt{UserId}, \texttt{ProfileName}, \texttt{Time}, \texttt{Text}).
+    \item Drop rows with \texttt{HelpfulnessNumerator} $>$ \texttt{HelpfulnessDenominator}, which is impossible by definition.
+    \item Drop rows whose \texttt{Text} is still identical to an earlier row's (copies between accounts, spam).
+    \item Replace a missing \texttt{Summary} by an empty string and create the label from \texttt{Score} (Section~\ref{sec:5-4}).
+\end{enumerate}
+
+\begin{center}
+\begin{tabular}{@{}p{7cm}p{3cm}p{3cm}@{}}
+    \toprule
+    Stage & Rows left & Rows removed \\
+    \midrule
+    Raw file & 568{,}454 & -- \\
+    After step 1 (repeated key) & 393{,}933 & 174{,}521 \\
+    After step 2 (invalid helpfulness) & 393{,}931 & 2 \\
+    After step 3 (repeated \texttt{Text}) & 393{,}577 & 354 \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Result.} Cleaning removes 174{,}877 rows (30.8\% of 568{,}454) and leaves \textbf{393{,}577 reviews}. Step 3 keeps the first occurrence regardless of its star rating. It also removes legitimate but identical short reviews written by different people, which is a deliberate trade: it costs 354 rows (0.09\% of the data) and closes the remaining leakage route. The cleaned table is saved once and read by every later stage.
+
+\section{Building the Model Input Text}
+\label{sec:5-3}
+
+The model input is
+\begin{equation*}
+    \text{text} = \operatorname{clean}(\texttt{Summary}) + \text{``. ''} + \operatorname{clean}(\texttt{Text}),
+\end{equation*}
+where $\operatorname{clean}$ unescapes HTML entities, deletes HTML tags and URLs, and collapses whitespace. It does not lowercase, remove punctuation or remove stop words (Section~\ref{sec:4-7}). The separator follows three rules:
+\begin{itemize}
+    \item If the title is non-empty and does not end with ``.'', ``!'' or ``?'', the two parts are joined with ``. ''.
+    \item If the title already ends with one of those marks, the parts are joined with a single space.
+    \item If the title is empty (27 raw rows have a missing title), the input is the cleaned body alone.
+\end{itemize}
+For example, the review titled ``Not as Advertised'' becomes ``Not as Advertised. Product arrived labeled as Jumbo Salted Peanuts\ldots'', and the body fragment ``\ldots were bummed.\texttt{<br />}\texttt{<br />}Now, because\ldots'' becomes ``\ldots were bummed. Now, because\ldots''. Cleaning all 393{,}577 reviews took 19.5 seconds. Tokenisation depends on the model (a word vocabulary for the BiLSTM, WordPiece for the Transformer), so it is done in the modelling chapters.
+
+\section{Label Construction}
+\label{sec:5-4}
+
+The label is derived from \texttt{Score} with the mapping of Section~\ref{sec:2-2}: 1 and 2 stars give negative (0), 3 stars neutral (1), 4 and 5 stars positive (2).
+
+\section{Train, Validation and Test Split}
+\label{sec:5-5}
+
+The data are split in two stratified stages with a fixed seed: 80\% for training and 20\% held out, then the held-out part is divided equally into validation and test.
+
+\begin{lstlisting}
+train_df, temp_df = train_test_split(
+    df[cols], test_size=0.2, stratify=df['label'], random_state=SEED)
+val_df, test_df = train_test_split(
+    temp_df, test_size=0.5, stratify=temp_df['label'], random_state=SEED)
+\end{lstlisting}
+
+\begin{center}
+\begin{tabular}{@{}lrrrr@{}}
+    \toprule
+    Part & Reviews & negative & neutral & positive \\
+    \midrule
+    Train & 314{,}861 & 45{,}654 & 23{,}803 & 245{,}404 \\
+    Validation & 39{,}358 & \multicolumn{3}{c}{same proportions as train} \\
+    Test & 39{,}358 & \multicolumn{3}{c}{same proportions as train} \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+The proportions are about 14.5\%, 7.6\% and 77.9\% in every part because the split is stratified. Training updates the weights. Validation drives early stopping, the choice of the best epoch and the later calibration of the neutral threshold. Test is used once, at the end, for the reported results. Because the seed and the rule are fixed, a re-run produces the same three parts.
+
+\section{Class Weights}
+\label{sec:5-7}
+
+Let $N$ be the number of training reviews, $K=3$ the number of classes and $N_c$ the number of training reviews of class $c$. The weight of class $c$ is
+\begin{equation*}
+    w_c = \frac{N}{K\,N_c},
+\end{equation*}
+and the loss over a batch is
+\begin{equation*}
+    \mathcal{L} = -\frac{1}{\sum_i w_{y_i}} \sum_i w_{y_i}\log \hat p_{i,y_i}.
+\end{equation*}
+A rare class receives a large weight, so an error on it costs more and its gradient is not drowned by the majority class. The weights are computed from the training counts only:
+
+\begin{center}
+\begin{tabular}{@{}lrr@{}}
+    \toprule
+    Class & Training reviews $N_c$ & Weight $w_c$ \\
+    \midrule
+    negative & 45{,}654 & 2.299 \\
+    neutral & 23{,}803 & 4.409 \\
+    positive & 245{,}404 & 0.428 \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+A neutral review weighs about 10 times as much as a positive one ($4.409/0.428 \approx 10.3$), which is exactly the imbalance ratio of Section~\ref{sec:4-3}.
+
+\section{Leakage Prevention and Random Split}
+\label{sec:5-8}
+
+\begin{itemize}
+    \item \textbf{Repeated text.} Duplicates are removed \emph{before} the split (Section~\ref{sec:5-2}), so the same text cannot sit in both training and test.
+    \item \textbf{Statistics from training only.} Class weights are computed from the training part (Section~\ref{sec:5-7}); the BiLSTM word vocabulary is built from the training part only (modelling chapter).
+    \item \textbf{Test used once.} Epoch choice and the neutral threshold are tuned on validation; test is read for the final report.
+    \item \textbf{Random, not chronological.} Training and test reviews come from the same period, although the label distribution drifts (Section~\ref{sec:4-5}). The scores therefore do not measure performance on future reviews.
+    \item \textbf{No automatic check.} The class proportions of each part are printed and compared by eye; there is no assertion, so a change to the split code should be re-checked against the table of Section~\ref{sec:5-5}.
+\end{itemize}
+
+\section{Conclusion}
+\label{sec:5-9}
+
+The raw 568{,}454 reviews become 393{,}577 cleaned reviews, split into 314{,}861 training, 39{,}358 validation and 39{,}358 test reviews, with class weights of 2.299, 4.409 and 0.428 for negative, neutral and positive. The next chapters train the models on the training part, select on validation and report on test.

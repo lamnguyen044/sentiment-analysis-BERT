@@ -1,0 +1,100 @@
+\section{Nền tảng đánh giá và theo dõi cảm xúc}
+\label{sec:2-1}
+
+Một cửa hàng bán qua sàn thương mại điện tử nhận phản hồi dưới dạng văn bản tự do. Mỗi review cho thấy khách hàng cảm thấy thế nào về sản phẩm, và một tập review cho thấy sản phẩm nào được khen, sản phẩm nào bị chê. Đếm review theo cảm xúc biến văn bản đó thành một con số có thể theo dõi theo thời gian và so sánh giữa các sản phẩm.
+
+\section{Cảm xúc từ số sao: nhãn yếu}
+\label{sec:2-2}
+
+Bộ dữ liệu không có nhãn cảm xúc, chỉ có số sao (1--5) do người viết chọn. Số sao được dùng làm \textbf{nhãn yếu}: rẻ để có nhưng chỉ gần đúng. Phép ánh xạ được cố định một lần:
+
+\begin{center}
+\begin{tabular}{@{}lccccc@{}}
+    \toprule
+    Số sao (\texttt{Score}) & 1 & 2 & 3 & 4 & 5 \\
+    \midrule
+    Nhãn & negative & negative & neutral & positive & positive \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+Người viết có thể chấm năm sao nhưng vẫn viết lời phàn nàn, nên một số nhãn sai ngay từ đầu. Điều này được coi là một đặc tính của dữ liệu, không bị che giấu, và được xem xét khi phân tích lỗi của các mô hình.
+
+\section{Mục tiêu nghiệp vụ}
+\label{sec:2-3}
+
+Mục tiêu là phân loại cảm xúc của một review chỉ từ văn bản của nó. Các mục tiêu cụ thể là:
+
+\begin{itemize}
+    \item \textbf{Chuẩn bị bộ dữ liệu đáng tin:} loại các review lặp trước khi chia, để việc đánh giá đo khả năng tổng quát hoá chứ không đo khả năng ghi nhớ.
+    \item \textbf{Xây dựng hai bộ phân loại nơ-ron:} BiLSTM với attention huấn luyện từ đầu, và bộ mã hoá BERT được fine-tune trên cùng dữ liệu.
+    \item \textbf{So sánh công bằng:} trên cùng các review test, với quy tắc luôn đoán positive làm mốc tham chiếu.
+\end{itemize}
+
+\section{Độ đo đánh giá}
+\label{sec:2-4}
+
+Accuracy là chưa đủ ở đây, vì luôn đoán \emph{positive} đã đạt khoảng 78\%. Với mỗi lớp $c$, precision, recall và F1 là
+\begin{equation*}
+    P_c = \frac{TP_c}{TP_c+FP_c},\qquad
+    R_c = \frac{TP_c}{TP_c+FN_c},\qquad
+    F1_c = \frac{2\,P_c R_c}{P_c+R_c},
+\end{equation*}
+và độ đo chính là \textbf{Macro-F1}, trung bình không trọng số của ba lớp:
+\begin{equation*}
+    \text{Macro-F1} = \frac{1}{3}\sum_{c} F1_c .
+\end{equation*}
+Mỗi lớp có trọng số như nhau, nên lớp neutral nhỏ nặng bằng lớp positive lớn. Báo cáo cũng nêu accuracy, F1 theo trọng số, F1 từng lớp, ma trận nhầm lẫn, thời gian huấn luyện và số tham số.
+
+\section{Tiêu chí thành công}
+\label{sec:2-5}
+
+Thành công được định nghĩa \textbf{tương đối so với các phương án đơn giản}, không đặt các ngưỡng tuyệt đối tuỳ ý:
+
+\begin{center}
+\begin{tabular}{@{}p{3cm}p{11.5cm}@{}}
+    \toprule
+    Mức & Tiêu chí (đánh giá trên tập test chưa từng thấy) \\
+    \midrule
+    Dự đoán & Mỗi mô hình đã huấn luyện có Macro-F1 cao hơn quy tắc luôn đoán positive (khoảng 0,29). \\
+    Học chuyển giao & Mô hình BERT được fine-tune có Macro-F1 cao hơn BiLSTM huấn luyện từ đầu, và khoảng bootstrap ghép cặp của chênh lệch không chứa 0. \\
+    Lớp thiểu số & F1 của lớp negative và neutral được báo cáo riêng và lớn hơn 0 với mọi mô hình. \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\section{Từ mục tiêu đến bài toán phân tích}
+\label{sec:2-6}
+
+Đầu vào là văn bản tiếng Anh của một review, gồm tiêu đề ngắn (\texttt{Summary}) và nội dung (\texttt{Text}). Đầu ra là một nhãn $y \in \{\text{negative}, \text{neutral}, \text{positive}\}$. Nhiệm vụ là học một hàm $f_\theta$ từ văn bản sang $\{0,1,2\}$ bằng cách cực tiểu hoá hàm mất mát cross-entropy có trọng số lớp trên tập train (Mục~\ref{sec:5-7}).
+
+\section{Hướng tiếp cận}
+\label{sec:2-7}
+
+\begin{center}
+\begin{tabular}{@{}c@{}}
+    \textbf{Review thô} (568.454 dòng) \\
+    $\downarrow$ \\
+    \textbf{Làm sạch}: loại review lặp và dòng không hợp lệ \\
+    $\downarrow$ \\
+    \textbf{Văn bản đầu vào và nhãn}: tiêu đề $+$ nội dung, nhãn từ số sao \\
+    $\downarrow$ \\
+    \textbf{Chia phân tầng}: train / validation / test, kèm một tập con test cố định \\
+    $\downarrow$ \\
+    \textbf{Huấn luyện}: BiLSTM với attention; fine-tune BERT; loss có trọng số lớp \\
+    $\downarrow$ \\
+    \textbf{Đánh giá}: Macro-F1, khoảng tin cậy bootstrap, phân tích lỗi \\
+\end{tabular}
+\end{center}
+
+\section{Lộ trình thực hiện}
+\label{sec:2-8}
+
+Hướng tiếp cận được thực hiện thành một chuỗi bước, mỗi bước nằm trong một chương:
+
+\begin{itemize}
+    \item \textbf{Đặc tả dữ liệu} (Chương~\ref{ch:dataset}): nguồn, lược đồ, quy ước và những gì không có.
+    \item \textbf{Tìm hiểu dữ liệu} (Chương~\ref{ch:data-understanding}): cân bằng lớp, độ dài, thời gian, nhiễu, từ vựng; những điều này quyết định độ đo, giới hạn độ dài chuỗi và quy tắc làm sạch.
+    \item \textbf{Chuẩn bị dữ liệu} (Chương~\ref{ch:data-preparation}): làm sạch, tạo văn bản đầu vào, chia dữ liệu và tính trọng số lớp.
+    \item \textbf{Xây dựng mô hình và đánh giá}: BiLSTM với attention, fine-tune BERT (Chương~\ref{ch:modeling}) và so sánh các mô hình (Chương~\ref{ch:evaluation}).
+\end{itemize}

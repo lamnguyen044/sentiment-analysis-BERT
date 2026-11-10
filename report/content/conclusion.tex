@@ -1,0 +1,32 @@
+\section{Summary}
+\label{sec:8-1}
+
+The project turned 568{,}454 Amazon food reviews into a leakage-safe corpus of 393{,}577 cleaned reviews (Chapter~\ref{ch:data-preparation}), split 80/10/10 with stratification, and compared two trained classifiers with the always-positive rule on a three-class sentiment task labelled from star ratings.
+
+\begin{itemize}
+    \item \textbf{Fine-tuned BERT-base is the better model:} Macro-F1 0.7877 and accuracy 0.9074 on the 39{,}358 test reviews, ahead of the BiLSTM with attention (0.7422) by 0.0455, with a 95\% interval of $[+0.0400,\,+0.0507]$ for the difference. It is ahead on all three classes, so transfer learning beats learning from scratch on this task.
+    \item \textbf{Neutral is the weak point of both models} (F1 0.49 and 0.55): they predict it too often, and shifting the threshold helps only the BiLSTM.
+    \item \textbf{Cost.} BERT needs 19 times the training time and 17.5 times the parameters of the BiLSTM for 0.0455 more Macro-F1.
+\end{itemize}
+
+\section{Limitations}
+\label{sec:8-2}
+
+The limits are listed with their measurements in Section~\ref{sec:7-9}. The most important are: star labels that do not always match the text; a random split that does not measure performance on future reviews; a single run for each model; and a BERT model that was fine-tuned for only two epochs, with validation Macro-F1 still rising.
+
+\section{Future Work}
+\label{sec:8-3}
+
+\begin{enumerate}
+    \item \textbf{Longer or repeated fine-tuning of BERT} (more epochs, several seeds), and stronger encoders such as RoBERTa-base or DeBERTa-v3, to test whether the BERT score is a lower bound.
+    \item \textbf{A time-based split} (train until 2011, test on 2012) to measure performance on later reviews and the effect of the drift of the label distribution.
+    \item \textbf{Pre-trained word vectors} (GloVe, fastText) for the BiLSTM embedding, to see whether the gap to BERT narrows.
+    \item \textbf{Other ways to treat the imbalance} (focal loss, oversampling), because the large neutral weight may cause the over-prediction of neutral.
+    \item \textbf{Head-and-tail truncation} for long reviews, where both models scored lowest.
+    \item \textbf{A small human-labelled sample}, not based on stars, to measure how much of the error is label noise.
+\end{enumerate}
+
+\section{Reproducibility}
+\label{sec:8-4}
+
+The split uses a fixed seed and rule and all predictions on the test part are stored, so every table of Chapter~\ref{ch:evaluation} can be recomputed from them. The code is one notebook (cleaning, understanding and preparation of the data, BiLSTM, BERT and evaluation) and a shared package \texttt{src/}.

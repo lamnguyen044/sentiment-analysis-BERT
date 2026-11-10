@@ -1,0 +1,423 @@
+%% beamerinnerthemeHUST.sty -- Inner elements: title page, lists, blocks for HUST theme
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{beamerinnerthemeHUST}[2026/10/26 HUST Beamer inner theme]
+
+\mode<presentation>
+
+\RequirePackage{tikz}
+
+%% ------------------------------------------------------------- Lists
+\setbeamertemplate{itemize item}{\raisebox{0.2ex}{\tiny\textcolor{hustaccent}{$\blacksquare$}}}
+\setbeamertemplate{itemize subitem}{\raisebox{0.2ex}{\tiny\textcolor{hustmain}{$\blacktriangleright$}}}
+\setbeamertemplate{itemize subsubitem}{\raisebox{0.2ex}{\tiny\textcolor{hustaccent}{$\bullet$}}}
+
+\setbeamertemplate{enumerate item}{\small\bfseries\insertenumlabel.}
+\setbeamertemplate{enumerate subitem}{\footnotesize\bfseries\insertenumlabel.\insertsubenumlabel}
+
+%% ------------------------------------------------------------- Blocks
+\setbeamertemplate{blocks}[rounded][shadow=false]
+
+%% ------------------------------------------------------------- Title Page
+\def\hust@titlepage@cover{cover}
+\def\hust@titlepage@dark{dark}
+\def\hust@titlepage@welcome{welcome}
+\def\hust@coverbg@light{light}
+\def\hust@coverbg@solid{solid}
+\def\hust@opt@on{on}
+\def\hust@opt@off{off}
+\def\hust@mode@image{image}
+
+\defbeamertemplate*{title page}{HUST}[1][]{%
+  \ifx\hust@titlepage\hust@titlepage@welcome
+    %% ----------------------- 1. Welcome Screen (PPT Slide 1, Image 2)
+    \begin{tikzpicture}[remember picture, overlay]
+      \node[inner sep=0pt, outer sep=0pt, anchor=center] at (current page.center) {%
+        \includegraphics[width=\paperwidth,height=\paperheight]{bg-dark-\hust@colname-\ifhust@wide 169\else 43\fi.png}%
+      };
+      \ifx\hust@wordmark\hust@opt@on
+        \node[inner sep=0pt, outer sep=0pt, anchor=center] at (current page.center) {%
+          \hustwordmarklockup[image=footer-hust-white.png, color=white, height=0.11\paperheight]%
+        };
+      \fi
+      \ifx\hust@slogan\hust@opt@on
+        \node[inner sep=0pt, outer sep=0pt, anchor=south] at ([yshift=0.08\paperheight] current page.south) {%
+          {\usebeamerfont{slogan}\color{white}\hust@slogantext}%
+        };
+      \fi
+    \end{tikzpicture}
+  \else\ifx\hust@titlepage\hust@titlepage@dark
+    %% ----------------------- 2. Dark Title Page (PPT Slide 2)
+    \begin{tikzpicture}[remember picture, overlay]
+      \node[inner sep=0pt, outer sep=0pt, anchor=center] at (current page.center) {%
+        \includegraphics[width=\paperwidth,height=\paperheight]{bg-dark-\hust@colname-\ifhust@wide 169\else 43\fi.png}%
+      };
+      \node[anchor=center, text width=0.58\paperwidth, align=center] at (current page.center) {%
+        {\usebeamerfont{title}\color{white}\MakeUppercase{\inserttitle}\par}%
+        \ifx\insertsubtitle\@empty\else
+          \vspace{0.4em}%
+          {\usebeamerfont{subtitle}\color{white!85}\insertsubtitle\par}%
+        \fi
+        \vspace{1.0em}%
+        {\usebeamerfont{author}\color{white!95}\insertauthor\par}%
+        \ifx\insertinstitute\@empty\else
+          \vspace{0.2em}%
+          {\usebeamerfont{institute}\color{white!80}\insertinstitute\par}%
+        \fi
+        \ifx\insertdate\@empty\else
+          \vspace{0.2em}%
+          {\usebeamerfont{date}\color{white!75}\insertdate\par}%
+        \fi
+      };
+      \ifx\hust@slogan\hust@opt@on
+        \node[inner sep=0pt, outer sep=0pt, anchor=south] at ([yshift=0.06\paperheight] current page.south) {%
+          {\usebeamerfont{slogan}\color{white!80}\hust@slogantext}%
+        };
+      \fi
+    \end{tikzpicture}
+  \else%
+    %% ----------------------- 3. Cover Page (cover / solid / light)
+    \if\relax\detokenize\expandafter{\hust@logotwoimage}\relax%
+      \def\hust@has@logotwo{0}%
+    \else%
+      \ifx\hust@logotwoimage\hust@opt@off%
+        \def\hust@has@logotwo{0}%
+      \else%
+        \def\hust@has@logotwo{1}%
+      \fi%
+    \fi%
+    \def\hust@covh{\ifnum\hust@has@logotwo=1 0.82\dimexpr\hust@fH{coverLogoH}\relax\else\hust@fH{coverLogoH}\fi}%
+    \ifx\hust@coverbg\hust@coverbg@solid
+      %% Solid color background (hustmain: Blue or Red) -> white HUST logo lockup
+      \sbox\hust@box{%
+        \if\relax\detokenize\expandafter{\hust@logounit}\relax%
+          \hustlogo[height=\hust@covh, layout=\hust@logolayout, dark]%
+        \else%
+          \hustlogo[height=\hust@covh, unit=\hust@logounit, layout=\hust@logolayout, dark]%
+        \fi%
+      }%
+      \ifnum\hust@has@logotwo=1%
+        \sbox\hust@boxb{%
+          \hustlogo[image=\hust@logotwoimage,
+                    height=\hust@covh,
+                    layout=\hust@logotwolayout,
+                    vn=\hust@logotwovn,
+                    en=\hust@logotwoen,
+                    color=white,
+                    equalwidth=false]%
+        }%
+      \fi%
+    \else
+      \sbox\hust@box{%
+        \ifx\hust@logomode\hust@mode@image%
+          \includegraphics[width=\hust@fW{coverLogoW}]{logo-full.png}%
+        \else%
+          \if\relax\detokenize\expandafter{\hust@logounit}\relax%
+            \hustlogo[height=\hust@covh, layout=\hust@logolayout]%
+          \else%
+            \hustlogo[height=\hust@covh, unit=\hust@logounit, layout=\hust@logolayout]%
+          \fi%
+        \fi%
+      }%
+      \ifnum\hust@has@logotwo=1%
+        \sbox\hust@boxb{%
+          \hustlogo[image=\hust@logotwoimage,
+                    height=\hust@covh,
+                    layout=\hust@logotwolayout,
+                    vn=\hust@logotwovn,
+                    en=\hust@logotwoen,
+                    color=\hust@logotwocolor,
+                    equalwidth=false]%
+        }%
+      \fi%
+    \fi
+    \leavevmode%
+    \begin{tikzpicture}[remember picture, overlay]
+      %% Cover background:
+      %% - cover (default): bg-cover-* (white background with solid halftone ring on the right)
+      %% - light: bg-cover-* + 60% white wash (40% tint / +20% lightness like bg-dark dots) so text never clashes in 4:3
+      %% - solid: solid brand color background (hustmain) with no halftone ring graphic
+      \ifx\hust@coverbg\hust@coverbg@solid
+        \fill[hustmain] (current page.south west) rectangle (current page.north east);
+      \else\ifx\hust@coverbg\hust@coverbg@light
+        \fill[white] (current page.south west) rectangle (current page.north east);
+        \node[inner sep=0pt, outer sep=0pt, anchor=center, opacity=\hust@coverlight@opacity] at (current page.center) {%
+          \includegraphics[width=\paperwidth,height=\paperheight]{bg-cover-\hust@colname-\ifhust@wide 169\else 43\fi.png}%
+        };
+      \else
+        \node[inner sep=0pt, outer sep=0pt, anchor=center] at (current page.center) {%
+          \includegraphics[width=\paperwidth,height=\paperheight]{bg-cover-\hust@colname-\ifhust@wide 169\else 43\fi.png}%
+        };
+      \fi\fi
+      %% Official HUST logo at top left (Slot 1)
+      \node[inner sep=0pt, outer sep=0pt, anchor=north west] (logo1)
+        at ([xshift=\hust@fW{coverLogoX}, yshift=-\hust@fH{coverLogoY}] current page.north west) {%
+          \usebox\hust@box
+        };
+      %% Slot 2: Co-branding / Unit logo (vertically aligned below Slot 1)
+      \ifnum\hust@has@logotwo=1
+        \node[inner sep=0pt, outer sep=0pt, anchor=north west] (logo2)
+          at ([yshift=-0.16cm] logo1.south west) {%
+            \usebox\hust@boxb
+          };
+      \fi
+      %% Title, Subtitle, Author block
+      \ifx\hust@coverbg\hust@coverbg@solid
+        \node[inner sep=0pt, outer sep=0pt, anchor=north west, text width=\hust@fW{coverTextW}, align=left]
+          at ([xshift=\hust@fW{coverLogoX}, yshift=-\hust@fH{coverTitleY}] current page.north west) {%
+          {\usebeamerfont{title}\color{white}\MakeUppercase{\inserttitle}\par}%
+          \ifx\insertsubtitle\@empty\else
+            \vspace{0.5em}%
+            {\usebeamerfont{subtitle}\color{white!90}\insertsubtitle\par}%
+          \fi
+          \vspace{1.3em}%
+          {\usebeamerfont{author}\color{hustsubyellow}\insertauthor\par}%
+          \ifx\insertinstitute\@empty\else
+            \vspace{0.3em}%
+            {\usebeamerfont{institute}\color{white!90}\insertinstitute\par}%
+          \fi
+          \ifx\insertdate\@empty\else
+            \vspace{0.3em}%
+            {\usebeamerfont{date}\color{white!80}\insertdate\par}%
+          \fi
+        };
+        \ifx\hust@slogan\hust@opt@on
+          \node[inner sep=0pt, outer sep=0pt, anchor=south west]
+            at ([xshift=\hust@fW{coverLogoX}, yshift=\hust@fH{sloganY}] current page.south west) {%
+            {\usebeamerfont{slogan}\color{white}\hust@slogantext}%
+          };
+        \fi
+      \else
+        \node[inner sep=0pt, outer sep=0pt, anchor=north west, text width=\hust@fW{coverTextW}, align=left]
+          at ([xshift=\hust@fW{coverLogoX}, yshift=-\hust@fH{coverTitleY}] current page.north west) {%
+          {\usebeamerfont{title}\color{hustcover}\MakeUppercase{\inserttitle}\par}%
+          \ifx\insertsubtitle\@empty\else
+            \vspace{0.5em}%
+            {\usebeamerfont{subtitle}\color{hustblack}\insertsubtitle\par}%
+          \fi
+          \vspace{1.3em}%
+          {\usebeamerfont{author}\color{hustaccent}\insertauthor\par}%
+          \ifx\insertinstitute\@empty\else
+            \vspace{0.3em}%
+            {\usebeamerfont{institute}\color{hustblack}\insertinstitute\par}%
+          \fi
+          \ifx\insertdate\@empty\else
+            \vspace{0.3em}%
+            {\usebeamerfont{date}\color{hustblack!75}\insertdate\par}%
+          \fi
+        };
+        \ifx\hust@slogan\hust@opt@on
+          \node[inner sep=0pt, outer sep=0pt, anchor=south west]
+            at ([xshift=\hust@fW{coverLogoX}, yshift=\hust@fH{sloganY}] current page.south west) {%
+            {\usebeamerfont{slogan}\color{hustcover}\hust@slogantext}%
+          };
+        \fi
+      \fi
+    \end{tikzpicture}
+  \fi\fi
+}
+
+%% ------------------------------------------------------------- Table of Contents
+\defbeamertemplate*{section in toc}{HUST}{%
+  \leavevmode%
+  \begin{tikzpicture}[baseline={(box.center)}]
+    \node[inner sep=0pt, minimum size=1.35em, fill=hustmain, text=white, font=\bfseries\small, anchor=center] (box) at (0, 0)
+      {\hfil\inserttocsectionnumber\hfil};
+    \node[anchor=west, inner sep=0pt, text width=\dimexpr\linewidth - 2.5em\relax, align=left] at ([xshift=0.6em] box.east)
+      {\usebeamerfont{section in toc}\color{hustmain}\inserttocsection};
+  \end{tikzpicture}\par\vskip 0.7em%
+}
+
+\defbeamertemplate*{subsection in toc}{HUST}{%
+  \leavevmode\hskip 2.1em%
+  \textcolor{hustblack}{\rule{0.65ex}{0.65ex}}\hskip 0.6em%
+  {\usebeamerfont{subsection in toc}\color{hustblack}\inserttocsubsection}\par\vskip 0.4em%
+}
+
+%% Multi-column TOC with split option: \tableofcontents[split=4] or \husttoc[split=4]
+\define@key{beamertoc}{split}{\def\hust@toc@split{#1}}
+
+\let\hust@orig@beamer@toc\beamer@tableofcontents
+\def\beamer@tableofcontents[#1]{%
+  \def\hust@toc@split{0}%
+  \setkeys{beamertoc}{#1}%
+  \ifnum\hust@toc@split>1\relax
+    \begingroup
+      \edef\hust@saved@split{\hust@toc@split}%
+      \def\hust@toc@split{0}%
+      \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+          \hust@orig@beamer@toc[#1,split=0,sections={1-\the\numexpr\hust@saved@split-1\relax}]
+        \end{column}
+        \begin{column}{0.48\textwidth}
+          \hust@orig@beamer@toc[#1,split=0,sections={\hust@saved@split-99}]
+        \end{column}
+      \end{columns}
+    \endgroup
+  \else
+    \hust@orig@beamer@toc[#1]%
+  \fi
+}
+\newcommand{\husttoc}[1][]{\tableofcontents[#1]}
+
+%% Convenient environment and command for Table of Contents / Outline frame
+%% Defaults: title={Nội dung chính}, subtitle is Hidden
+\define@key{husttoc}{split}{\def\hust@toc@split{#1}}
+\define@key{husttoc}{title}{\def\hust@toc@title{#1}}
+\define@key{husttoc}{subtitle}{\def\hust@toc@subtitle{#1}}
+
+\newcommand{\hust@set@tockeys}[1]{%
+  \in@{=}{#1}%
+  \ifin@
+    \setkeys{husttoc}{#1}%
+  \else
+    \ifstrempty{#1}{}{\def\hust@toc@title{#1}}%
+  \fi
+}
+
+\newenvironment{husttocframe}[1][]{%
+  \def\hust@toc@split{0}%
+  \let\hust@toc@title\husttoctitle
+  \let\hust@toc@subtitle\husttocsubtitle
+  \hust@set@tockeys{#1}%
+  \edef\hust@cur@sub{\hust@toc@subtitle}%
+  \ifdefstring{\hust@cur@sub}{Hidden}{\def\hust@cur@sub{}}{}%
+  \ifdefstring{\hust@cur@sub}{hidden}{\def\hust@cur@sub{}}{}%
+  \ifdefstring{\hust@cur@sub}{none}{\def\hust@cur@sub{}}{}%
+  \begin{frame}[environment=husttocframe,noprogressbar]%
+    \frametitle{\hust@toc@title}%
+    \ifx\hust@cur@sub\@empty\else
+      \framesubtitle{\hust@cur@sub}%
+    \fi
+    \ifnum\hust@toc@split>1\relax
+      \tableofcontents[split=\hust@toc@split,hideallsubsections]%
+    \else
+      \tableofcontents[hideallsubsections]%
+    \fi
+}{%
+  \end{frame}%
+}
+
+\newcommand{\hustprinttoc}[1][]{\husttocframe[#1]}
+
+%% ------------------------------------------------------------- Section Page
+\def\hust@sec@panel{panel}
+\defbeamertemplate*{section page}{HUST}[1][]{%
+  \begin{tikzpicture}[remember picture, overlay]
+    \node[inner sep=0pt, outer sep=0pt, anchor=center] at (current page.center) {%
+      \includegraphics[width=\paperwidth,height=\paperheight]{bg-panel-\hust@colname-\ifhust@wide 169\else 43\fi\ifx\hust@panelsocial\hust@opt@off -clean\fi.png}%
+    };
+    \ifx\hust@framebg\hust@opt@on
+      \hust@resolve@diagimg
+      \def\hust@cur@framebgh{%
+        \ifx\hust@framebg@height\hust@val@auto
+          \ifhust@wide 0.28\paperheight\else 0.26\paperheight\fi
+        \else
+          \hust@framebg@height
+        \fi
+      }%
+      \node[inner sep=0pt, outer sep=0pt, anchor=south east, opacity=\hust@framebg@opacity]
+        at ([xshift=0pt, yshift=0pt] current page.south east) {%
+          \includegraphics[height=\hust@cur@framebgh,keepaspectratio]{\hust@diag@img}%
+        };
+    \fi
+    \node[anchor=west, text width=0.56\paperwidth, align=left]
+      at ([xshift=0.38\paperwidth, yshift=0pt] current page.west) {%
+        \tableofcontents[sections=\the\c@section,currentsection]%
+      };
+  \end{tikzpicture}
+}
+
+\newif\ifhust@sec@panel@explicit
+\hust@sec@panel@explicitfalse
+\gdef\hust@pending@secalias{}
+
+\pgfkeys{/hustsection/.cd,
+  panel/.is choice,
+  panel/true/.code={\global\hust@sec@showpaneltrue\global\hust@sec@panel@explicittrue},
+  panel/false/.code={\global\hust@sec@showpanelfalse\global\hust@sec@panel@explicittrue},
+  panel/on/.code={\global\hust@sec@showpaneltrue\global\hust@sec@panel@explicittrue},
+  panel/off/.code={\global\hust@sec@showpanelfalse\global\hust@sec@panel@explicittrue},
+  true/.code={\global\hust@sec@showpaneltrue\global\hust@sec@panel@explicittrue},
+  false/.code={\global\hust@sec@showpanelfalse\global\hust@sec@panel@explicittrue},
+  on/.code={\global\hust@sec@showpaneltrue\global\hust@sec@panel@explicittrue},
+  off/.code={\global\hust@sec@showpanelfalse\global\hust@sec@panel@explicittrue},
+  none/.code={\global\hust@sec@showpanelfalse\global\hust@sec@panel@explicittrue},
+  alias/.code={\gdef\hust@pending@secalias{#1}},
+  short/.code={\gdef\hust@pending@secalias{#1}},
+  .unknown/.code={},
+}
+
+\newcommand{\hustsection}[1][panel=true]{%
+  \pgfkeys{/hustsection/.cd, #1}%
+  \@ifnextchar\bgroup{\@gobble}{}%
+}
+
+\newcommand{\hustpanel}[1][true]{%
+  \pgfkeys{/hustsection/.cd, panel=#1}%
+  \@ifnextchar\bgroup{\@gobble}{}%
+}
+
+%% Hook \section to support \hustsection[alias=...] seamlessly when \section{...} has no []
+\let\hust@orig@section\section
+\def\section{%
+  \@ifstar{%
+    \hust@orig@section*%
+  }{%
+    \ifx\hust@pending@secalias\@empty
+      \expandafter\hust@orig@section
+    \else
+      \expandafter\hust@section@with@pending
+    \fi
+  }%
+}
+\def\hust@section@with@pending{%
+  \@ifnextchar[%
+    {\hust@section@with@pending@opt}%
+    {%
+      \edef\hust@tmp@alias{\hust@pending@secalias}%
+      \gdef\hust@pending@secalias{}%
+      \expandafter\hust@orig@section\expandafter[\hust@tmp@alias]%
+    }%
+}
+\def\hust@section@with@pending@opt[#1]{%
+  \gdef\hust@pending@secalias{}%
+  \hust@orig@section[#1]%
+}
+
+\AtBeginSection[]{%
+  \ifhust@sec@panel@explicit
+    \ifhust@sec@showpanel
+      \begin{frame}[plain,noframenumbering]
+        \sectionpage
+      \end{frame}
+    \fi
+  \else
+    \ifx\hust@sectionpage\hust@sec@panel
+      \def\hust@cur@secshort{\insertsectionhead}%
+      \def\hust@cmp@nopanel{nopanel}%
+      \def\hust@cmp@panelfalse{panel=false}%
+      \ifx\hust@cur@secshort\hust@cmp@nopanel
+        \hust@sec@showpanelfalse
+      \fi
+      \ifx\hust@cur@secshort\hust@cmp@panelfalse
+        \hust@sec@showpanelfalse
+      \fi
+      \ifhust@sec@showpanel
+        \begin{frame}[plain,noframenumbering]
+          \sectionpage
+        \end{frame}
+      \fi
+    \fi
+  \fi
+  \global\hust@sec@panel@explicitfalse
+  \global\hust@sec@showpaneltrue
+}
+
+\newcommand{\hustPanelFrame}{%
+  \begin{frame}[plain,noframenumbering]
+    \sectionpage
+  \end{frame}%
+}
+
+\mode<all>
+\endinput

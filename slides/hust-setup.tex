@@ -1,0 +1,309 @@
+%% ==============================================================================
+%% HUST Beamer Theme - Setup & Academic Extension Package (hust-setup.tex)
+%% Modular setup file containing academic packages, UX/UI extensions,
+%% math operators, list customizations, and cross-references.
+%% ==============================================================================
+
+%% ------------------------------------------------------------- 1. Layout & Tables
+\RequirePackage{wrapfig}
+\RequirePackage{booktabs}
+\RequirePackage{tabularx}
+\RequirePackage{multirow, multicol}
+\RequirePackage{array}
+\renewcommand{\tabularxcolumn}[1]{m{#1}}
+\RequirePackage{caption}
+\captionsetup{font=scriptsize, labelfont={bf, color=hustmain}, labelsep=colon}
+
+%% TikZ libraries for graphics & markers:
+\usetikzlibrary{calc, decorations.markings, arrows.meta}
+
+%% ------------------------------------------------------------- 2. List Customization (enumitem & tasks)
+\RequirePackage{enumitem}
+%% Safe reconfiguration to avoid Beamer labelenumi recursion:
+\setlist[enumerate,1]{label=\arabic*.}
+\setlist[enumerate,2]{label=\alph*.}
+\setlist[enumerate,3]{label=\roman*)}
+\setlist[itemize,1]{label=\usebeamerfont*{itemize item}\usebeamercolor[fg]{itemize item}\raise0.2ex\hbox{\vrule height 0.8ex width 0.8ex}}
+\setlist[itemize,2]{label=\usebeamerfont*{itemize subitem}\usebeamercolor[fg]{itemize subitem}\raise0.2ex\hbox{\vrule height 0.6ex width 0.6ex}}
+\setlist[itemize,3]{label=\raisebox{0.2ex}{\tiny\textcolor{hustaccent}{$\bullet$}}}
+\setlist[itemize,4]{label=\raisebox{0.2ex}{\tiny\textcolor{hustmain}{$-$}}}
+
+%% Square number box badge matching HUST Brand identity:
+\DeclareRobustCommand{\hustitemsq}[1]{%
+  \raisebox{0.05ex}{\colorbox{hustmain}{\makebox[1.05em]{\textcolor{white}{\bfseries\scriptsize#1}}}}%
+}
+
+%% Dedicated square-numbered list environment:
+\newlist{hustsqlist}{enumerate}{2}
+\setlist[hustsqlist,1]{label=\hustitemsq{\arabic*}, ref=\arabic*, leftmargin=2.2em, labelsep=0.6em, itemsep=4pt, topsep=2pt}
+\setlist[hustsqlist,2]{label=\hustitemsq{\alph*}, ref=\alph*, leftmargin=2.2em, labelsep=0.6em, itemsep=3pt, topsep=2pt}
+
+%% Tasks package for multi-column horizontal listings:
+%% Default task behavior uses the standard Beamer itemize square bullet.
+%% To use square letter badges, pass [label=\hustitemsq{\alph*}, label-width=1.5em, item-indent=1.9em].
+\RequirePackage{tasks}
+\settasks{
+  before-skip = 2pt,
+  after-skip = 2pt,
+  after-item-skip = 3pt,
+  label-width = 5pt,
+  item-indent = 9pt,
+  label-offset = 2pt,
+  column-sep = 1em,
+  ref = \arabic*,
+  label = \raisebox{0.15ex}{\textcolor{hustmain}{\rule{0.75ex}{0.75ex}}}
+}
+
+%% ------------------------------------------------------------- 3. Mathematics & Operators
+\RequirePackage{amsmath, mathtools}
+\RequirePackage{derivative}
+\RequirePackage{nicematrix, nicefrac}
+\RequirePackage{siunitx}
+
+%% Bold math compatibility:
+\ifdefined\symbfit
+  \providecommand{\bm}[1]{\symbfit{#1}}
+\else
+  \providecommand{\bm}[1]{\boldsymbol{#1}}
+\fi
+
+%% Contour integrals & symbols:
+\providecommand{\oiint}{\oint\mkern-13mu\oint}
+\providecommand{\ointctrclockwise}{\oint}
+
+%% Pre-defined paired delimiters:
+\DeclarePairedDelimiter{\abs}{\lvert}{\rvert}
+\DeclarePairedDelimiter{\norm}{\lVert}{\rVert}
+\DeclarePairedDelimiter{\innerp}{\langle}{\rangle}
+\DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
+\DeclarePairedDelimiter{\floor}{\lfloor}{\rfloor}
+
+%% Math operators:
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\Arg}{Arg}
+\DeclareMathOperator*{\Real}{Re}
+\DeclareMathOperator*{\Image}{Img}
+
+%% Stretchy arrows:
+\newcommand{\vv}[1]{\overrightarrow{#1}}
+\newcommand{\vs}[1]{\vec{#1}}
+
+%% ------------------------------------------------------------- 4. Cleveref & Cross-referencing
+\makeatletter
+%% Trick cleveref into enabling full hyperref link support in Beamer:
+\expandafter\let\csname opt@hyperref.sty\endcsname\@empty
+\makeatother
+\RequirePackage{cleveref}
+
+\makeatletter
+%% Synchronize external links to hustmain color:
+\let\hust@orig@href\href
+\renewcommand{\href}[2]{\hust@orig@href{#1}{\textcolor{hustmain}{#2}}}
+
+%% Ensure \eqref creates a clickable link in Beamer:
+\renewcommand{\eqref}[1]{\hyperref[#1]{\textcolor{hustmain}{\textup{(\ref*{#1})}}}}
+
+%% Cleveref name definitions & clickable format:
+\crefname{equation}{phương trình}{phương trình}
+\Crefname{equation}{Phương trình}{Phương trình}
+\crefformat{equation}{#2\textcolor{hustmain}{phương trình~#1}#3}
+\Crefformat{equation}{#2\textcolor{hustmain}{Phương trình~#1}#3}
+
+\crefname{figure}{hình}{hình}
+\Crefname{figure}{Hình}{Hình}
+\crefformat{figure}{#2\textcolor{hustmain}{hình~#1}#3}
+\Crefformat{figure}{#2\textcolor{hustmain}{Hình~#1}#3}
+
+\crefname{table}{bảng}{bảng}
+\Crefname{table}{Bảng}{Bảng}
+\crefformat{table}{#2\textcolor{hustmain}{bảng~#1}#3}
+\Crefformat{table}{#2\textcolor{hustmain}{Bảng~#1}#3}
+
+\crefname{section}{mục}{mục}
+\Crefname{section}{Mục}{Mục}
+\crefformat{section}{#2\textcolor{hustmain}{mục~#1}#3}
+\Crefformat{section}{#2\textcolor{hustmain}{Mục~#1}#3}
+
+\crefname{subsection}{mục}{mục}
+\Crefname{subsection}{Mục}{Mục}
+\crefformat{subsection}{#2\textcolor{hustmain}{mục~#1}#3}
+\Crefformat{subsection}{#2\textcolor{hustmain}{Mục~#1}#3}
+
+\crefname{hustsqlisti}{mục}{mục}
+\Crefname{hustsqlisti}{Mục}{Mục}
+\crefformat{hustsqlisti}{#2\textcolor{hustmain}{mục~#1}#3}
+\Crefformat{hustsqlisti}{#2\textcolor{hustmain}{Mục~#1}#3}
+
+\crefname{algocf}{thuật toán}{thuật toán}
+\Crefname{algocf}{Thuật toán}{Thuật toán}
+\crefformat{algocf}{#2\textcolor{hustmain}{thuật toán~#1}#3}
+\Crefformat{algocf}{#2\textcolor{hustmain}{Thuật toán~#1}#3}
+
+\crefname{lstlisting}{đoạn mã}{đoạn mã}
+\Crefname{lstlisting}{Đoạn mã}{Đoạn mã}
+\crefformat{lstlisting}{#2\textcolor{hustmain}{đoạn mã~#1}#3}
+\Crefformat{lstlisting}{#2\textcolor{hustmain}{Đoạn mã~#1}#3}
+
+\crefname{listing}{đoạn mã}{đoạn mã}
+\Crefname{listing}{Đoạn mã}{Đoạn mã}
+\crefformat{listing}{#2\textcolor{hustmain}{đoạn mã~#1}#3}
+\Crefformat{listing}{#2\textcolor{hustmain}{Đoạn mã~#1}#3}
+
+\crefname{theorem}{định lý}{định lý}
+\Crefname{theorem}{Định lý}{Định lý}
+\crefformat{theorem}{#2\textcolor{hustmain}{định lý~#1}#3}
+\Crefformat{theorem}{#2\textcolor{hustmain}{Định lý~#1}#3}
+
+\crefname{definition}{định nghĩa}{định nghĩa}
+\Crefname{definition}{Định nghĩa}{Định nghĩa}
+\crefformat{definition}{#2\textcolor{hustmain}{định nghĩa~#1}#3}
+\Crefformat{definition}{#2\textcolor{hustmain}{Định nghĩa~#1}#3}
+
+\crefname{lemma}{bổ đề}{bổ đề}
+\Crefname{lemma}{Bổ đề}{Bổ đề}
+\crefformat{lemma}{#2\textcolor{hustmain}{bổ đề~#1}#3}
+\Crefformat{lemma}{#2\textcolor{hustmain}{Bổ đề~#1}#3}
+
+\crefname{corollary}{hệ quả}{hệ quả}
+\Crefname{corollary}{Hệ quả}{Hệ quả}
+\crefformat{corollary}{#2\textcolor{hustmain}{hệ quả~#1}#3}
+\Crefformat{corollary}{#2\textcolor{hustmain}{Hệ quả~#1}#3}
+
+\crefname{example}{ví dụ}{ví dụ}
+\Crefname{example}{Ví dụ}{Ví dụ}
+\crefformat{example}{#2\textcolor{hustmain}{ví dụ~#1}#3}
+\Crefformat{example}{#2\textcolor{hustmain}{Ví dụ~#1}#3}
+
+%% 4.1. Universal Figure / Table Custom Caption & Cross-Reference Engine
+%% Supports:
+%%   - Custom prefix name (e.g. Hình, Bảng, Figure, Table, Image, ...)
+%%   - Auto-incrementing numbering per prefix or manual numbering (e.g. Hình 6, Bảng 2.5)
+%%   - Clickable \cref / \Cref synchronization in hustmain color
+\newcommand{\hustfigurename}{Hình}
+\newcommand{\husttablename}{Bảng}
+\newcommand{\hustsetfigurename}[1]{\renewcommand{\hustfigurename}{#1}}
+\newcommand{\hustsettablename}[1]{\renewcommand{\husttablename}{#1}}
+
+\newcounter{hustref}
+\crefname{hustref}{}{}
+\Crefname{hustref}{}{}
+\crefformat{hustref}{#2\textcolor{hustmain}{#1}#3}
+\Crefformat{hustref}{#2\textcolor{hustmain}{#1}#3}
+
+\NewDocumentCommand{\hustcaption}{ O{\hustfigurename} o m }{%
+  \par\vspace{3pt}\noindent
+  \phantomsection
+  \edef\hust@cap@name{#1}%
+  \IfValueTF{#2}{%
+    %% Manual numbering passed (e.g. [6], [2.5])
+    \edef\hust@cap@num{#2}%
+  }{%
+    %% Auto-incremental numbering per custom name
+    \@ifundefined{c@hust@cnt@\hust@cap@name}{%
+      \newcounter{hust@cnt@\hust@cap@name}%
+    }{}%
+    \stepcounter{hust@cnt@\hust@cap@name}%
+    \edef\hust@cap@num{\arabic{hust@cnt@\hust@cap@name}}%
+  }%
+  %% Setup labels for standard \ref and \cref / \Cref:
+  \def\thehustref{\hust@cap@name~\hust@cap@num}%
+  \refstepcounter{hustref}%
+  %% Render caption centered matching HUST typography:
+  \begin{center}
+    {\scriptsize\bfseries\color{hustmain}\hust@cap@name~\hust@cap@num:}\ %
+    {\normalfont\scriptsize #3}%
+  \end{center}%
+  \par\vspace{2pt}%
+}
+\makeatother
+
+%% ------------------------------------------------------------- 5. Code & Pseudocode
+\RequirePackage{listings}
+\RequirePackage[linesnumbered,ruled,vlined]{algorithm2e}
+\RequirePackage[highlightmode=immediate]{minted}
+
+%% Keep algorithm2e line numbers and Input/Output strictly aligned inside the ruled block:
+\SetNlSkip{0.5em}
+\AtBeginEnvironment{algorithm}{%
+  \IncMargin{1.2em}%
+  \SetKwInput{KwIn}{\kern-1.2em Input}%
+  \SetKwInput{KwOut}{\kern-1.2em Output}%
+}
+
+\makeatletter
+\AtBeginDocument{%
+  \renewcommand{\fnum@lstlisting}{Listing~\thelstlisting}%
+}
+\makeatother
+
+\colorlet{hustcodebg}{hustmain!5!white}
+\lstdefinestyle{hustcode}{
+  backgroundcolor=\color{hustcodebg},
+  basicstyle=\ttfamily\scriptsize,
+  keywordstyle=\bfseries\color{hustmain},
+  stringstyle=\color{HUSTOrange},
+  commentstyle=\itshape\color{HUSTGray},
+  numberstyle=\tiny\color{HUSTGray},
+  numbers=left,
+  numbersep=5pt,
+  framesep=3pt,
+  xleftmargin=1.5em,
+  framexleftmargin=\dimexpr 1.5em - 3.5pt\relax,
+  xrightmargin=3.5pt,
+  framexrightmargin=0pt,
+  frame=single,
+  framerule=0.5pt,
+  rulecolor=\color{hustmain!30},
+  breaklines=true,
+  tabsize=2,
+  showstringspaces=false
+}
+
+%% Configure minted to match theme colors and keep line numbers inside the frame box:
+\setminted{
+  fontsize=\scriptsize,
+  linenos=true,
+  numbersep=5pt,
+  xleftmargin=1.2em,
+  breaklines=true,
+  tabsize=2,
+  frame=lines,
+  framerule=0.5pt,
+  rulecolor=\color{hustmain!40}
+}
+\renewcommand{\theFancyVerbLine}{\textcolor{HUSTGray}{\tiny\arabic{FancyVerbLine}}}
+
+%% ------------------------------------------------------------- 5. Beamer Theorems & Academic Blocks
+%% Enable numbering for Beamer theorem and definition environments:
+\setbeamertemplate{theorems}[numbered]
+
+%% Vietnamese localization for standard Beamer theorem environments:
+\deftranslation{Definition}{Định nghĩa}
+\deftranslation{Theorem}{Định lý}
+\deftranslation{Lemma}{Bổ đề}
+\deftranslation{Corollary}{Hệ quả}
+\deftranslation{Example}{Ví dụ}
+\deftranslation{Examples}{Ví dụ}
+\deftranslation{Proof}{Chứng minh}
+\deftranslation[to=English]{Definition}{Định nghĩa}
+\deftranslation[to=English]{Theorem}{Định lý}
+\deftranslation[to=English]{Lemma}{Bổ đề}
+\deftranslation[to=English]{Corollary}{Hệ quả}
+\deftranslation[to=English]{Example}{Ví dụ}
+\deftranslation[to=English]{Examples}{Ví dụ}
+\deftranslation[to=English]{Proof}{Chứng minh}
+\providecommand{\proofname}{Chứng minh}
+\renewcommand{\proofname}{Chứng minh}
+
+%% Vector warning icon:
+\DeclareRobustCommand{\warning}{%
+  \tikz[baseline=0pt]{%
+    \draw[line width=0.6pt, line join=round, draw=HUSTRed, fill=HUSTYellow!70, inner sep=0pt]
+      (0,0) -- (1.1em,0) -- (0.55em,0.95em) -- cycle;
+    \node[font=\tiny\bfseries, text=HUSTRed] at (0.55em,0.3em) {!};
+  }\xspace}
+
+
+
+%% End of hust-setup.tex
